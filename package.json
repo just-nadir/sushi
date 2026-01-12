@@ -1,0 +1,11 @@
+{
+  "name": "sushi-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm run start:dev --prefix server\" \"npm run dev --prefix client-admin\" \"npm run dev --prefix client-telegram\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
