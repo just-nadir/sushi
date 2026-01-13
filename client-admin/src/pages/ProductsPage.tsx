@@ -59,7 +59,7 @@ export function ProductsPage() {
         try {
             setIsUploading(true);
             const url = await uploadFile(file);
-            setFormData(prev => ({ ...prev, image: `${API_URL}${url}` }));
+            setFormData(prev => ({ ...prev, image: url }));
             toast.success("Rasm yuklandi");
         } catch (error) {
             console.error("Upload failed", error);

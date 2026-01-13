@@ -11,6 +11,7 @@ export interface Order {
     id: number;
     status: string;
     totalAmount: number;
+    comment?: string;
     createdAt: string;
     customerName: string;
     customerPhone: string;

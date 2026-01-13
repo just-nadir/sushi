@@ -1,13 +1,14 @@
-import { Search, Plus, ShoppingBag } from "lucide-react"
+import { Search, Plus, ShoppingBag, Minus } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { api, Category, Product } from "@/lib/api"
 import { useState, useMemo } from "react"
 import { useCartStore } from "@/lib/store"
 import { motion, AnimatePresence } from "framer-motion"
-import { toast } from "sonner"
+import { useNavigate } from "react-router-dom"
 
 export function HomePage() {
-    const { addToCart } = useCartStore();
+    const navigate = useNavigate();
+    const { addToCart, items } = useCartStore();
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -38,13 +39,6 @@ export function HomePage() {
 
     const handleAddToCart = (product: Product) => {
         addToCart(product);
-        toast.success(product.name, {
-            description: "Savatchaga muvaffaqiyatli qo'shildi",
-            action: {
-                label: "Bekor qilish",
-                onClick: () => console.log("Undo"),
-            },
-        });
     };
 
     return (
@@ -90,7 +84,7 @@ export function HomePage() {
                                 : "bg-white text-gray-600 border-gray-100 shadow-sm"
                                 }`}
                         >
-                            {cat.image && <img src={cat.image} className="w-5 h-5 rounded-md object-cover bg-white/20" />}
+                            {cat.image && <img src={cat.image.replace('http://localhost:3000', '')} className="w-5 h-5 rounded-md object-cover bg-white/20" />}
                             {cat.name}
                         </motion.button>
                     ))
@@ -137,12 +131,12 @@ export function HomePage() {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
-                                    className="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 flex flex-col gap-3 group active:scale-[0.98] transition-all hover:shadow-md"
+                                    className="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 flex flex-col gap-3 transition-all hover:shadow-md"
                                 >
                                     {/* Image */}
                                     <div className="aspect-square bg-gray-50 rounded-[1.5rem] w-full overflow-hidden relative">
                                         <img
-                                            src={product.image || "https://placehold.co/400x400/f3f4f6/9ca3af?text=No+Image"}
+                                            src={product.image?.replace('http://localhost:3000', '') || "https://placehold.co/400x400/f3f4f6/9ca3af?text=No+Image"}
                                             alt={product.name}
                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
@@ -160,23 +154,64 @@ export function HomePage() {
                                     </div>
 
                                     {/* Footer */}
-                                    <div className="flex items-center justify-between mt-auto pt-2">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] text-gray-400 font-medium line-through decoration-red-400 decoration-2">
-                                                {/* Optional: Fake original price logic */}
-                                            </span>
-                                            <span className="font-bold text-base text-gray-900">
+                                    <div className="mt-auto pt-1.5 flex flex-col gap-2">
+                                        {/* Price */}
+                                        <div className="flex items-end gap-1">
+                                            <span className="font-bold text-base text-gray-900 leading-none">
                                                 {product.price.toLocaleString('uz-UZ')}
-                                                <span className="text-[10px] text-gray-500 font-normal ml-0.5">so'm</span>
                                             </span>
+                                            <span className="text-[11px] text-gray-500 font-medium leading-none mb-[1px]">so'm</span>
                                         </div>
-                                        <motion.button
-                                            whileTap={{ scale: 0.8 }}
-                                            onClick={() => handleAddToCart(product)}
-                                            className="h-10 w-10 rounded-2xl bg-black text-white hover:bg-zinc-800 flex items-center justify-center shadow-lg shadow-black/10 transition-colors"
-                                        >
-                                            <Plus className="w-5 h-5 stroke-[3]" />
-                                        </motion.button>
+
+                                        {/* Action Button */}
+                                        <div className="w-full">
+                                            {(() => {
+                                                const cartItem = items.find(i => i.id === product.id);
+                                                const quantity = cartItem?.quantity || 0;
+
+                                                if (quantity > 0) {
+                                                    return (
+                                                        <div className="flex items-center justify-between bg-black text-white rounded-xl p-1 h-10 shadow-lg shadow-black/10 w-full">
+                                                            <motion.button
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (quantity === 1) {
+                                                                        useCartStore.getState().removeFromCart(product.id);
+                                                                    } else {
+                                                                        useCartStore.getState().updateQuantity(product.id, -1);
+                                                                    }
+                                                                }}
+                                                                className="w-10 h-full flex items-center justify-center hover:bg-zinc-800 rounded-lg transition-colors"
+                                                            >
+                                                                <Minus className="w-4 h-4 font-bold" />
+                                                            </motion.button>
+                                                            <span className="font-bold text-sm text-center tabular-nums flex-1">{quantity}</span>
+                                                            <motion.button
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    useCartStore.getState().addToCart(product);
+                                                                }}
+                                                                className="w-10 h-full flex items-center justify-center hover:bg-zinc-800 rounded-lg transition-colors"
+                                                            >
+                                                                <Plus className="w-4 h-4 font-bold" />
+                                                            </motion.button>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => handleAddToCart(product)}
+                                                        className="h-10 w-full rounded-xl bg-gray-100 text-gray-900 hover:bg-gray-200 flex items-center justify-center font-semibold text-sm transition-colors"
+                                                    >
+                                                        Qo'shish
+                                                    </motion.button>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))
@@ -184,6 +219,30 @@ export function HomePage() {
                     )}
                 </AnimatePresence>
             </div>
+            {/* Floating Cart Summary */}
+            <AnimatePresence>
+                {items.length > 0 && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className="fixed bottom-[90px] left-4 right-4 z-40 max-w-md mx-auto"
+                    >
+                        <div className="bg-black text-white p-3 px-5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-95 transition-transform" onClick={() => navigate('/cart')}>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{items.reduce((a, b) => a + b.quantity, 0)} dona mahsulot</span>
+                                <span className="font-bold text-lg leading-none mt-0.5">
+                                    {items.reduce((a, b) => a + (b.price * b.quantity), 0).toLocaleString()} <span className="text-xs font-normal text-gray-400">so'm</span>
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white/20 pl-4 pr-3 py-2 rounded-xl backdrop-blur-sm hover:bg-white/25 transition-colors">
+                                <span className="font-bold text-sm">Buyurtma</span>
+                                <ShoppingBag className="w-4 h-4" />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

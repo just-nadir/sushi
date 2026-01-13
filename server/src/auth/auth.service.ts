@@ -30,7 +30,8 @@ export class AuthService {
     }
 
     async sendOtp(phone: string): Promise<void> {
-        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        // const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const code = '1111'; // Temporary fixed code for testing
         // Expires in 5 minutes
         this.otpStore.set(phone, { code, expires: Date.now() + 5 * 60 * 1000 });
         await this.smsService.sendOtp(phone, code);
@@ -71,10 +72,22 @@ export class AuthService {
         });
     }
 
+    async findUserByPhone(phone: string): Promise<any> {
+        return this.prisma.user.findFirst({ where: { phone } });
+    }
+
+    async updateUserTelegramId(userId: string, telegramId: string): Promise<void> {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { telegramId }
+        });
+    }
+
     async login(user: any) {
         const payload = { username: user.username, sub: user.id, role: user.role };
         return {
             access_token: this.jwtService.sign(payload),
+            user: user
         };
     }
 }

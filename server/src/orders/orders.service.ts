@@ -66,7 +66,7 @@ export class OrdersService {
 
   findAll(phone?: string) {
     return this.prisma.order.findMany({
-      where: phone ? { customerPhone: phone } : {},
+      where: phone ? { customerPhone: { contains: phone } } : {},
       orderBy: { createdAt: 'desc' },
       include: {
         items: { include: { product: true } },

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Search } from "lucide-react";
 import { socket, Order } from "@/lib/socket";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { api } from "@/lib/api";
 
 const chartData = [
     { name: 'Du', value: 400000 },
@@ -86,18 +87,17 @@ export function DashboardPage() {
 
     useEffect(() => {
         // 1. Initial Fetch
-        fetch('http://localhost:3000/orders')
-            .then(res => res.json())
-            .then((res: any) => {
-                // Check if response is wrapped
-                const ordersData = res.data || res;
+        api.get('/orders')
+            .then(res => {
+                const data = res.data || res;
+                const ordersData = Array.isArray(data) ? data : (data.data || []);
+
                 if (Array.isArray(ordersData)) {
                     setOrders(ordersData);
                 } else {
                     console.error("Orders data is not an array:", ordersData);
                     setOrders([]);
                 }
-                // setIsLoading(false);
             })
             .catch(err => console.error(err));
 
@@ -128,11 +128,7 @@ export function DashboardPage() {
             // Optimistic update
             setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
 
-            await fetch(`http://localhost:3000/orders/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
-            });
+            await api.patch(`/orders/${id}`, { status });
         } catch (error) {
             console.error(error);
             // Revert if needed, but socket will usually fix it or refresh
@@ -159,7 +155,46 @@ export function DashboardPage() {
                             className="pl-9 pr-4 py-2 rounded-lg border bg-background"
                         />
                     </div>
-                    <Button variant="outline">Filtr</Button>
+                    <Button variant="outline" onClick={() => {
+                        const csvContent = "data:text/csv;charset=utf-8,"
+                            + "ID,Sana,Status,Jami Summa,Mijoz\n"
+                            + orders.map(o => `${o.id},${o.createdAt},${o.status},${o.totalAmount},${o.customerName || ''}`).join("\n");
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", "buyurtmalar.csv");
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }}>Export CSV</Button>
+                </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col">
+                    <span className="text-muted-foreground text-sm font-medium">Jami Tushum (Bugun)</span>
+                    <span className="text-2xl font-bold mt-2">
+                        {orders.reduce((acc, o) => acc + (o.status !== 'CANCELLED' ? o.totalAmount : 0), 0).toLocaleString()} <span className="text-sm font-normal text-gray-500">so'm</span>
+                    </span>
+                </div>
+                <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col">
+                    <span className="text-muted-foreground text-sm font-medium">Buyurtmalar</span>
+                    <span className="text-2xl font-bold mt-2">{orders.length}</span>
+                </div>
+                <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col">
+                    <span className="text-muted-foreground text-sm font-medium">O'rtacha Chek</span>
+                    <span className="text-2xl font-bold mt-2">
+                        {orders.length > 0
+                            ? Math.round(orders.reduce((acc, o) => acc + o.totalAmount, 0) / orders.length).toLocaleString()
+                            : 0} <span className="text-sm font-normal text-gray-500">so'm</span>
+                    </span>
+                </div>
+                <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col">
+                    <span className="text-muted-foreground text-sm font-medium">Faol Buyurtmalar</span>
+                    <span className="text-2xl font-bold mt-2 text-blue-600">
+                        {orders.filter(o => !['COMPLETED', 'CANCELLED'].includes(o.status)).length}
+                    </span>
                 </div>
             </div>
 

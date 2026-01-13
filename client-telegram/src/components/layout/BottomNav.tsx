@@ -1,15 +1,12 @@
-import { Home, ShoppingBag, Clock, User } from "lucide-react";
+import { Home, Clock, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useCartStore } from "@/lib/store";
 
 export function BottomNav() {
     const location = useLocation();
-    const { items } = useCartStore();
 
     const navItems = [
         { name: "Asosiy", icon: Home, path: "/" },
-        { name: "Savatcha", icon: ShoppingBag, path: "/cart", badge: items.length },
         { name: "Tarix", icon: Clock, path: "/history" },
         { name: "Profil", icon: User, path: "/profile" },
     ];
@@ -38,15 +35,6 @@ export function BottomNav() {
                                     className={`w-6 h-6 transition-colors ${isActive ? "text-primary fill-current" : "text-muted-foreground"}`}
                                     strokeWidth={isActive ? 2.5 : 2}
                                 />
-                                {item.badge ? (
-                                    <motion.span
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        className="absolute -top-1 -right-2 bg-primary text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center ring-2 ring-white"
-                                    >
-                                        {item.badge}
-                                    </motion.span>
-                                ) : null}
                             </div>
                         </Link>
                     )

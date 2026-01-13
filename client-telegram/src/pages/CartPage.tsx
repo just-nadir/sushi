@@ -28,14 +28,14 @@ export function CartPage() {
     }
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-48">
             <h1 className="text-2xl font-bold">Savatcha</h1>
 
             <div className="space-y-4">
                 {items.map(item => (
                     <div key={item.id} className="bg-card p-4 rounded-xl shadow-sm border border-border/50 flex gap-4">
                         <div className="h-20 w-20 bg-secondary rounded-lg shrink-0 overflow-hidden">
-                            <img src={item.image || "https://placehold.co/100"} alt={item.name} className="w-full h-full object-cover" />
+                            <img src={item.image?.replace('http://localhost:3000', '') || "https://placehold.co/100"} alt={item.name} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 flex flex-col justify-between">
                             <div className="flex justify-between items-start">
@@ -71,8 +71,8 @@ export function CartPage() {
                 ))}
             </div>
 
-            <div className="fixed bottom-16 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-10">
-                <div className="container max-w-[600px] mx-auto space-y-4">
+            <div className="fixed bottom-[90px] left-0 right-0 px-4 z-10">
+                <div className="container max-w-md mx-auto bg-background/80 backdrop-blur-lg border rounded-2xl p-4 shadow-lg space-y-4">
                     <div className="flex justify-between items-center text-lg font-bold">
                         <span>Jami:</span>
                         <span>{total().toLocaleString()} so'm</span>

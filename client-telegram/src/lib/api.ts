@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 
 // Backend URL
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface ApiResponse<T> {
     success: boolean;

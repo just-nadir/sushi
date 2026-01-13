@@ -10,10 +10,17 @@ import { UsersModule } from './users/users.module';
 import { OrdersGateway } from './orders/orders.gateway';
 import { OrdersModule } from './orders/orders.module';
 import { FilesModule } from './files/files.module';
+import { join } from 'path';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { TelegramBotService } from './common/services/telegram-bot.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', '..', 'client-telegram', 'dist'),
+      exclude: ['/api/(.*)'],
+    }),
     PrismaModule,
     CategoriesModule,
     ProductsModule,
@@ -23,6 +30,6 @@ import { FilesModule } from './files/files.module';
     FilesModule
   ],
   controllers: [AppController],
-  providers: [AppService, OrdersGateway],
+  providers: [AppService, OrdersGateway, TelegramBotService],
 })
 export class AppModule { }

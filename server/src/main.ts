@@ -11,6 +11,9 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors();
 
+  // Set Global Prefix
+  app.setGlobalPrefix('api');
+
   // Serve Static Files (Uploads)
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',

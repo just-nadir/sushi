@@ -244,7 +244,7 @@ export function CheckoutPage() {
                 )}
 
                 {/* Summary & Submit */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-20">
+                <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-b z-40 pb-6">
                     <div className="container max-w-[600px] mx-auto flex items-center gap-4">
                         <div className="flex-1">
                             <p className="text-sm text-gray-500">Jami to'lov</p>
