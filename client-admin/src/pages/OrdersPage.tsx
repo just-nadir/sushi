@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
     NEW: "bg-blue-100 text-blue-700",
-    KITCHEN: "bg-orange-100 text-orange-700",
+    COOKING: "bg-orange-100 text-orange-700",
     READY: "bg-purple-100 text-purple-700",
     DELIVERY: "bg-indigo-100 text-indigo-700",
     COMPLETED: "bg-green-100 text-green-700",
@@ -17,7 +17,7 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
     NEW: "Yangi",
-    KITCHEN: "Oshxonada",
+    COOKING: "Oshxonada",
     READY: "Tayyor",
     DELIVERY: "Yetkazilmoqda",
     COMPLETED: "Tugatildi",
@@ -87,7 +87,7 @@ export function OrdersPage() {
 
             {/* Filters */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {["ALL", "NEW", "KITCHEN", "READY", "DELIVERY", "COMPLETED", "CANCELLED"].map(status => (
+                {["ALL", "NEW", "COOKING", "READY", "DELIVERY", "COMPLETED", "CANCELLED"].map(status => (
                     <button
                         key={status}
                         onClick={() => setFilter(status)}
@@ -231,11 +231,11 @@ export function OrdersPage() {
                                     <h3 className="font-semibold text-gray-900">Statusni o'zgartirish</h3>
                                     <div className="grid grid-cols-2 gap-2">
                                         {selectedOrder.status === 'NEW' && (
-                                            <Button onClick={() => updateStatus(selectedOrder.id, 'KITCHEN')} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                                            <Button onClick={() => updateStatus(selectedOrder.id, 'COOKING')} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                                                 Oshxonaga
                                             </Button>
                                         )}
-                                        {selectedOrder.status === 'KITCHEN' && (
+                                        {selectedOrder.status === 'COOKING' && (
                                             <Button onClick={() => updateStatus(selectedOrder.id, 'READY')} className="w-full bg-purple-500 hover:bg-purple-600 text-white">
                                                 Tayyor
                                             </Button>
@@ -250,7 +250,7 @@ export function OrdersPage() {
                                                 Yetkazildi
                                             </Button>
                                         )}
-                                        {['NEW', 'KITCHEN', 'READY'].includes(selectedOrder.status) && (
+                                        {['NEW', 'COOKING', 'READY'].includes(selectedOrder.status) && (
                                             <Button variant="destructive" onClick={() => updateStatus(selectedOrder.id, 'CANCELLED')} className="w-full col-span-2">
                                                 Bekor qilish
                                             </Button>

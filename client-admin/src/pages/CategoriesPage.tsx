@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Plus, Pencil, Trash2, GripVertical, X } from "lucide-react";
-import { api, Category, API_URL } from "@/lib/api";
+import { api, Category } from "@/lib/api";
 import { toast } from "sonner";
 import { Reorder, useDragControls } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 export function CategoriesPage() {
     const [categories, setCategories] = useState<Category[]>([]);

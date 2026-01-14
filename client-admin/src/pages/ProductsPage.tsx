@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Plus, Search, Upload, Trash2, Pencil, Filter, X } from "lucide-react";
-import { api, Product, Category, uploadFile, API_URL } from "@/lib/api";
+import { api, Product, Category, uploadFile } from "@/lib/api";
 import { toast } from "sonner";
 
 export function ProductsPage() {

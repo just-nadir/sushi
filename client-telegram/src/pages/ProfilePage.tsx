@@ -1,9 +1,9 @@
 import { useAuthStore } from "@/lib/auth.store"
 import { motion } from "framer-motion"
-import { LogOut, User, Phone, ShoppingBag, Settings, ChevronRight } from "lucide-react"
+import { User, Phone, ShoppingBag, Settings, ChevronRight } from "lucide-react"
 
 export function ProfilePage() {
-    const { user, logout } = useAuthStore()
+    const { user } = useAuthStore()
 
     return (
         <div className="space-y-6 pb-24">

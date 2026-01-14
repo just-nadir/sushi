@@ -31,6 +31,49 @@ async function main() {
         });
         console.log('Admin user created.');
     }
+
+    // --- Sample Data Seeding ---
+    console.log('Seeding sample data...');
+
+    // Categories
+    const categories = [
+        { name: 'Ssetlar', sortOrder: 1 },
+        { name: 'Rolls', sortOrder: 2 },
+        { name: 'Issiq Rollar', sortOrder: 3 },
+        { name: 'Ichimliklar', sortOrder: 4 },
+    ];
+
+    for (const cat of categories) {
+        const existingCat = await prisma.category.findFirst({ where: { name: cat.name } });
+        if (!existingCat) {
+            const createdCat = await prisma.category.create({ data: cat });
+
+            // Add some products to each category
+            if (cat.name === 'Rolls') {
+                await prisma.product.createMany({
+                    data: [
+                        { name: 'Filadelfiya Roll', description: 'Losos, pishloq, bodring, guruch', price: 45000, categoryId: createdCat.id, isAvailable: true },
+                        { name: 'Kaliforniya Roll', description: 'Krab tayoqchalari, pishloq, bodring, kunjut', price: 38000, categoryId: createdCat.id, isAvailable: true },
+                    ]
+                });
+            } else if (cat.name === 'Ssetlar') {
+                await prisma.product.createMany({
+                    data: [
+                        { name: 'Sset Mini', description: '12 dona turli xil rollar', price: 95000, categoryId: createdCat.id, isAvailable: true },
+                        { name: 'Sset Max', description: '24 dona turli xil rollar', price: 180000, categoryId: createdCat.id, isAvailable: true },
+                    ]
+                });
+            } else if (cat.name === 'Ichimliklar') {
+                await prisma.product.createMany({
+                    data: [
+                        { name: 'Coca-Cola 0.5L', description: 'Salqin yoqimli ichimlik', price: 10000, categoryId: createdCat.id, isAvailable: true },
+                        { name: 'Suv 0.5L', description: 'Gazsiz toza suv', price: 5000, categoryId: createdCat.id, isAvailable: true },
+                    ]
+                });
+            }
+        }
+    }
+    console.log('Sample data seeded successfully.');
 }
 
 main()

@@ -1,4 +1,4 @@
-import { Search, Plus, ShoppingBag, Minus } from "lucide-react"
+import { Plus, ShoppingBag, Minus } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { api, Category, Product } from "@/lib/api"
 import { useState, useMemo } from "react"
@@ -10,7 +10,7 @@ export function HomePage() {
     const navigate = useNavigate();
     const { addToCart, items } = useCartStore();
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery] = useState("");
 
     // Fetch Categories
     const { data: categories, isLoading: isCatLoading } = useQuery({
@@ -44,21 +44,8 @@ export function HomePage() {
 
     return (
         <div className="space-y-6 pb-24 min-h-screen">
-            {/* Header / Search */}
-            <div className="sticky top-0 z-40 bg-white/10 backdrop-blur-md pt-4 pb-2 px-4 -mx-4 border-b border-white/20 shadow-sm">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-500" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Taom izlash..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/20 border border-white/30 text-gray-800 placeholder:text-gray-500 backdrop-blur-sm outline-none focus:ring-2 focus:ring-primary/50 text-base transition-all shadow-inner"
-                    />
-                </div>
-            </div>
+            {/* Header Spacing */}
+            <div className="h-20" />
 
             {/* Categories */}
             <div className="flex flex-nowrap gap-2.5 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide w-full touch-pan-x">
@@ -92,13 +79,6 @@ export function HomePage() {
                 )}
             </div>
 
-            {/* Products Header */}
-            <div className="flex items-center justify-between px-1 pt-2">
-                <h2 className="text-xl font-bold text-gray-900 bg-white/30 backdrop-blur-sm px-3 py-1 rounded-xl">Menyu</h2>
-                <span className="text-xs font-medium text-gray-600 bg-white/40 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/20">
-                    {filteredProducts?.length || 0} taom
-                </span>
-            </div>
 
             {/* Product Grid */}
             <div className="grid grid-cols-2 gap-2 pb-4">

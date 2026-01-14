@@ -19,7 +19,7 @@ interface OrderItem {
 interface Order {
     id: number;
     createdAt: string;
-    status: 'NEW' | 'CONFIRMED' | 'COOKING' | 'READY' | 'DELIVERY' | 'COMPLETED' | 'CANCELLED';
+    status: 'NEW' | 'CONFIRMED' | 'COOKING' | 'KITCHEN' | 'READY' | 'DELIVERY' | 'COMPLETED' | 'DELIVERED' | 'CANCELLED';
     totalAmount: number;
     items: OrderItem[];
 }
@@ -76,7 +76,7 @@ export function HistoryPage() {
             socket.off('disconnect', onDisconnect);
             socket.off('orderStatusChanged', onOrderUpdate);
         };
-    }, [queryClient]);
+    }, [queryClient, userPhone]);
 
     const statusColors: Record<string, string> = {
         NEW: "bg-blue-500/10 text-blue-700 border-blue-500/20",
@@ -85,6 +85,7 @@ export function HistoryPage() {
         READY: "bg-orange-500/10 text-orange-700 border-orange-500/20",
         DELIVERY: "bg-purple-500/10 text-purple-700 border-purple-500/20",
         COMPLETED: "bg-green-500/10 text-green-700 border-green-500/20",
+        DELIVERED: "bg-green-500/10 text-green-700 border-green-500/20",
         CANCELLED: "bg-red-500/10 text-red-700 border-red-500/20",
     };
 
@@ -92,9 +93,11 @@ export function HistoryPage() {
         NEW: "Yangi",
         CONFIRMED: "Tasdiqlandi",
         COOKING: "Tayyorlanmoqda",
+        KITCHEN: "Oshxonada",
         READY: "Tayyor",
         DELIVERY: "Yetkazilmoqda",
         COMPLETED: "Yetkazildi",
+        DELIVERED: "Yetkazildi",
         CANCELLED: "Bekor qilindi",
     };
 

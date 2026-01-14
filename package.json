@@ -6,7 +6,8 @@
     "start": "concurrently \"npm run start:dev --prefix server\" \"npm run dev --prefix client-admin\" \"npm run dev --prefix client-telegram\""
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "ssh2": "^1.17.0"
   },
   "workspaces": [
     "server",
