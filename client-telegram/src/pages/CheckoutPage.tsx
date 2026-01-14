@@ -3,9 +3,10 @@ import { useCartStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Copy } from "lucide-react";
+import { ArrowLeft, Copy, MapPin, User, CreditCard, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth.store";
+import { motion } from "framer-motion";
 
 export function CheckoutPage() {
     const { items, total, clearCart } = useCartStore();
@@ -127,106 +128,142 @@ export function CheckoutPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen pb-32">
             {/* Header */}
-            <div className="bg-white px-4 py-3 shadow-sm sticky top-0 z-10 flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-black">
-                    <ArrowLeft className="h-6 w-6" />
-                </button>
-                <h1 className="text-lg font-bold">Buyurtmani rasmiylashtirish</h1>
+            <div className="sticky top-0 z-30 pt-4 pb-2 px-4 -mx-4">
+                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-2 rounded-2xl mx-4 border border-white/20 shadow-lg">
+                    <button onClick={() => navigate(-1)} className="p-2 bg-white/20 rounded-xl hover:bg-white/30 text-white transition-colors">
+                        <ArrowLeft className="h-5 w-5 text-gray-800" />
+                    </button>
+                    <h1 className="text-lg font-bold text-gray-900">Buyurtmani rasmiylashtirish</h1>
+                </div>
             </div>
 
             <form onSubmit={handleSubmit} className="p-4 space-y-6">
 
                 {/* Contact Info */}
-                <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
-                    <h2 className="font-semibold text-gray-900">Aloqa ma'lumotlari</h2>
-                    <div className="space-y-3">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Ism *</label>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="liquid-card p-5 space-y-4"
+                >
+                    <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                        <div className="p-1.5 bg-primary/20 rounded-lg">
+                            <User className="w-4 h-4 text-primary" />
+                        </div>
+                        Aloqa ma'lumotlari
+                    </h2>
+                    <div className="space-y-4">
+                        <div className="relative group">
+                            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">Ism *</label>
                             <input
                                 required
-                                className="w-full px-4 py-3 rounded-lg bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                                className="liquid-input w-full px-4 py-3 outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900"
                                 placeholder="Ismingiz"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
+                        <div className="relative group">
+                            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">Telefon *</label>
                             <input
                                 type="tel"
                                 required
-                                className="w-full px-4 py-3 rounded-lg bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                                className="liquid-input w-full px-4 py-3 outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900"
                                 placeholder="+998 90 123 45 67"
                                 value={formData.phone}
                                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
                             />
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Delivery Info */}
-                <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
-                    <h2 className="font-semibold text-gray-900">Yetkazib berish</h2>
-                    <div className="space-y-3">
-
-
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="liquid-card p-5 space-y-4"
+                >
+                    <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                        <div className="p-1.5 bg-orange-500/20 rounded-lg">
+                            <MapPin className="w-4 h-4 text-orange-600" />
+                        </div>
+                        Yetkazib berish
+                    </h2>
+                    <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Manzil *</label>
+                            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">Manzil *</label>
                             <textarea
                                 required
-                                className="w-full px-4 py-3 rounded-lg bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none min-h-[80px]"
+                                className="liquid-input w-full px-4 py-3 outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900 min-h-[80px]"
                                 value={formData.address}
                                 onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                placeholder="Manzilingizni to'liq kiriting..."
                             />
+                            <button type="button" className="mt-2 text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+                                <MapPin className="w-3 h-3" />
+                                Lokatsiyani yuborish (Tez orada)
+                            </button>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Izoh (ixtiyoriy)</label>
+                            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">Izoh (ixtiyoriy)</label>
                             <input
-                                className="w-full px-4 py-3 rounded-lg bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                                className="liquid-input w-full px-4 py-3 outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900"
                                 placeholder="Domofon kodi, eshik raqami..."
                                 value={formData.comment}
                                 onChange={e => setFormData({ ...formData, comment: e.target.value })}
                             />
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Payment */}
-                <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
-                    <h2 className="font-semibold text-gray-900">To'lov turi</h2>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="liquid-card p-5 space-y-4"
+                >
+                    <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                        <div className="p-1.5 bg-green-500/20 rounded-lg">
+                            <CreditCard className="w-4 h-4 text-green-600" />
+                        </div>
+                        To'lov turi
+                    </h2>
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             type="button"
                             onClick={() => setFormData({ ...formData, paymentType: 'CASH' })}
-                            className={`p-3 rounded-xl border font-medium transition-all ${formData.paymentType === 'CASH'
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100'
+                            className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 ${formData.paymentType === 'CASH'
+                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30'
+                                : 'bg-white/40 border-white/40 text-gray-600 hover:bg-white/60'
                                 }`}
                         >
-                            Naqd
+                            <Banknote className="w-6 h-6" />
+                            <span className="font-bold text-sm">Naqd</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setFormData({ ...formData, paymentType: 'card' })}
-                            className={`p-3 rounded-xl border font-medium transition-all ${formData.paymentType === 'card'
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100'
+                            className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 ${formData.paymentType === 'card'
+                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30'
+                                : 'bg-white/40 border-white/40 text-gray-600 hover:bg-white/60'
                                 }`}
                         >
-                            Karta (Click/Payme)
+                            <CreditCard className="w-6 h-6" />
+                            <span className="font-bold text-sm text-center">Karta (Click/Payme)</span>
                         </button>
                     </div>
 
                     {formData.paymentType === 'card' && (
-                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm space-y-2">
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-sm space-y-3 backdrop-blur-sm">
                             <p className="font-medium text-blue-900">
                                 ℹ️ Hozircha avtoto'lov mavjud emas.
                             </p>
-                            <p className="text-blue-800">
-                                Iltimos, quyidagi karta raqamiga <b>{total().toLocaleString()} so'm</b> o'tkazib,
-                                chekni <a href={`https://t.me/${paymentInfo.phone.replace(/\+/g, '').replace(/\s/g, '')}`} className="underline font-bold">{paymentInfo.phone}</a> raqamiga
+                            <p className="text-blue-800 leading-relaxed">
+                                Iltimos, quyidagi karta raqamiga <b className="text-blue-900 bg-blue-200/50 px-1 rounded">{total().toLocaleString()} so'm</b> o'tkazib,
+                                chekni <a href={`https://t.me/${paymentInfo.phone.replace(/\+/g, '').replace(/\s/g, '')}`} className="underline font-bold hover:text-blue-600">{paymentInfo.phone}</a> raqamiga
                                 Telegram orqali yuboring.
                             </p>
                             <button
@@ -235,31 +272,39 @@ export function CheckoutPage() {
                                     navigator.clipboard.writeText(paymentInfo.card.replace(/\s/g, ''));
                                     toast.success("Karta raqami nusxalandi!");
                                 }}
-                                className="w-full bg-white p-3 rounded-lg border border-blue-100 font-mono text-center font-bold text-lg text-slate-700 tracking-wider cursor-pointer active:scale-95 transition-all hover:bg-blue-50 hover:border-blue-200 flex items-center justify-center gap-2 group"
+                                className="w-full bg-white/80 p-3 rounded-xl border border-blue-100 font-mono text-center font-bold text-lg text-slate-700 tracking-wider cursor-pointer active:scale-95 transition-all hover:bg-white flex items-center justify-center gap-2 group shadow-sm"
                             >
                                 <span>{paymentInfo.card}</span>
-                                <Copy className="w-4 h-4 text-blue-300 group-hover:text-blue-500" />
+                                <Copy className="w-4 h-4 text-blue-400 group-hover:text-blue-600" />
                             </button>
                         </div>
                     )}
-                </div>
+                </motion.div>
 
                 {/* Error Log */}
                 {errorLog && (
-                    <div className="bg-red-50 p-4 rounded-xl border border-red-200">
-                        <h3 className="text-red-800 font-bold mb-1">Xatolik:</h3>
-                        <pre className="text-red-600 text-sm whitespace-pre-wrap font-mono">{errorLog}</pre>
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-red-500/10 p-4 rounded-2xl border border-red-500/20 backdrop-blur-md"
+                    >
+                        <h3 className="text-red-600 font-bold mb-1">Xatolik:</h3>
+                        <pre className="text-red-500 text-sm whitespace-pre-wrap font-mono">{errorLog}</pre>
+                    </motion.div>
                 )}
 
                 {/* Summary & Submit */}
-                <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-b z-40 pb-6">
-                    <div className="container max-w-[600px] mx-auto flex items-center gap-4">
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-500">Jami to'lov</p>
-                            <p className="text-xl font-bold text-gray-900">{total().toLocaleString()} so'm</p>
+                <div className="fixed bottom-20 left-4 right-4 z-40">
+                    <div className="liquid-glass border-none !bg-black/80 !text-white p-4 rounded-[2rem] shadow-2xl flex items-center justify-between backdrop-blur-xl">
+                        <div className="flex flex-col pl-2">
+                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Jami to'lov</p>
+                            <p className="text-xl font-bold">{total().toLocaleString()} <span className="text-sm font-normal text-gray-400">so'm</span></p>
                         </div>
-                        <Button type="submit" className="px-8 h-12 text-lg font-bold shadow-xl shadow-primary/30" isLoading={isSubmitting}>
+                        <Button
+                            type="submit"
+                            className="px-8 h-12 rounded-xl text-lg font-bold bg-white text-black hover:bg-gray-200 shadow-lg shadow-white/10 active:scale-95 transition-all"
+                            isLoading={isSubmitting}
+                        >
                             Tasdiqlash
                         </Button>
                     </div>

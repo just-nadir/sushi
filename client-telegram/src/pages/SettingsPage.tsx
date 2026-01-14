@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { ChevronLeft, Moon, Globe, LogOut, User as UserIcon } from "lucide-react"
 import { useAuthStore } from "@/lib/auth.store"
+import { motion, AnimatePresence } from "framer-motion"
 
 export function SettingsPage() {
     const navigate = useNavigate()
@@ -23,23 +24,23 @@ export function SettingsPage() {
             <div className="flex items-center gap-4 pt-4 px-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="p-2 bg-white rounded-xl shadow-sm border border-gray-100"
+                    className="p-2 liquid-glass rounded-xl text-gray-700 hover:bg-white/40 transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5 text-gray-700" />
+                    <ChevronLeft className="w-5 h-5" />
                 </button>
-                <h1 className="text-2xl font-bold text-gray-900">Sozlamalar</h1>
+                <h1 className="text-2xl font-bold text-gray-900 drop-shadow-sm">Sozlamalar</h1>
             </div>
 
             {/* Profile Card */}
-            <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+            <div className="liquid-card p-4 flex items-center gap-4 border border-white/40">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary/20 to-purple-500/20 flex items-center justify-center text-primary shadow-inner">
                     <UserIcon className="w-8 h-8" />
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-gray-900">
                         {user?.fullName || "Foydalanuvchi"}
                     </h2>
-                    <p className="text-gray-500 font-medium text-sm">
+                    <p className="text-gray-600 font-medium text-sm">
                         {user?.phone || "+998 -- --- -- --"}
                     </p>
                 </div>
@@ -51,57 +52,69 @@ export function SettingsPage() {
 
                 <button
                     onClick={handleLogout}
-                    className="w-full bg-red-50 p-4 rounded-2xl border border-red-100 flex items-center gap-3 text-red-600 font-bold active:scale-95 transition-transform"
+                    className="w-full bg-red-500/10 hover:bg-red-500/20 backdrop-blur-md p-4 rounded-3xl border border-red-500/20 flex items-center gap-3 text-red-600 font-bold active:scale-95 transition-all shadow-sm"
                 >
-                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center">
                         <LogOut className="w-5 h-5" />
                     </div>
                     Chiqish
                 </button>
             </div>
 
-            <div className="text-center text-sm text-gray-400 pt-8">
+            <div className="text-center text-sm text-gray-500 pt-8 font-medium">
                 Versiya 1.0.0
             </div>
             {/* Logout Confirmation Modal */}
-            {showLogoutConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4">
-                        <div className="text-center space-y-2">
-                            <h3 className="text-xl font-bold text-gray-900">Tizimdan chiqish</h3>
-                            <p className="text-gray-500">Rostdan ham hisobingizdan chiqmoqchimisiz?</p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowLogoutConfirm(false)}
-                                className="flex-1 h-12 rounded-xl bg-gray-100 text-gray-900 font-bold"
-                            >
-                                Yo'q
-                            </button>
-                            <button
-                                onClick={confirmLogout}
-                                className="flex-1 h-12 rounded-xl bg-red-500 text-white font-bold"
-                            >
-                                Ha, chiqish
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AnimatePresence>
+                {showLogoutConfirm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="liquid-glass border-white/40 !bg-white/90 rounded-[2rem] p-6 w-full max-w-sm space-y-6 shadow-2xl"
+                        >
+                            <div className="text-center space-y-2">
+                                <h3 className="text-xl font-bold text-gray-900">Tizimdan chiqish</h3>
+                                <p className="text-gray-500 font-medium">Rostdan ham hisobingizdan chiqmoqchimisiz?</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowLogoutConfirm(false)}
+                                    className="flex-1 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold transition-colors"
+                                >
+                                    Yo'q
+                                </button>
+                                <button
+                                    onClick={confirmLogout}
+                                    className="flex-1 h-12 rounded-2xl bg-red-500 text-white font-bold shadow-lg shadow-red-500/30 hover:bg-red-600 transition-all"
+                                >
+                                    Ha, chiqish
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
 
 function SettingItem({ icon: Icon, label, value }: { icon: any, label: string, value: string }) {
     return (
-        <div className="w-full bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="w-full liquid-glass p-4 rounded-3xl flex items-center justify-between transition-transform active:scale-[0.99] cursor-pointer hover:bg-white/50">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500">
+                <div className="w-10 h-10 rounded-2xl bg-white/40 flex items-center justify-center text-gray-700 shadow-sm border border-white/20">
                     <Icon className="w-5 h-5" />
                 </div>
-                <span className="font-bold text-gray-700">{label}</span>
+                <span className="font-bold text-gray-800">{label}</span>
             </div>
-            <span className="text-sm font-medium text-gray-400">{value}</span>
+            <span className="text-sm font-medium text-gray-500 bg-white/30 px-3 py-1 rounded-full border border-white/20">{value}</span>
         </div>
     )
 }

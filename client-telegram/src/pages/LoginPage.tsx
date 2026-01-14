@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth.store";
-import { Button } from "@/components/ui/Button";
-import { Loader2, User } from "lucide-react";
+import { Loader2, User, Smartphone, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 type LoginStep = 'PHONE' | 'OTP' | 'NAME';
 
@@ -23,14 +23,8 @@ export function LoginPage() {
         if (!value.startsWith("+998 ")) {
             value = "+998 ";
         }
-        // Allow digits and spaces only after prefix, limit length
-        // Keep it simple: just ensure it starts with prefix
         setPhone(value);
     };
-
-    // Auto-login removed to allow strictly SMS OTP flow and proper logout testing.
-    // If we want auto-login later, we should probably check if we have a persisted token (which auth store handles)
-    // or rely on the user explicitly logging in.
 
     // Step 1: Send OTP
     const handlePhoneSubmit = async (e: React.FormEvent) => {
@@ -51,7 +45,6 @@ export function LoginPage() {
         e.preventDefault();
         setIsLoading(true);
         const tg = window.Telegram?.WebApp;
-        // Use 'any' to bypass TS lint errors for telegram object properties
         const telegramId = (tg?.initDataUnsafe?.user as any)?.id?.toString();
 
         try {
@@ -66,7 +59,7 @@ export function LoginPage() {
 
                 const regRes = await api.post('/auth/register', {
                     phone,
-                    fullName: fullName || 'Mijoz', // Fallback, though required in form
+                    fullName: fullName || 'Mijoz',
                     telegramId,
                     username
                 });
@@ -84,7 +77,7 @@ export function LoginPage() {
         }
     };
 
-    // Step 3: Register Name
+    // Step 3: Register Name (This step might be redundant if logic above handles auto-reg, keeping for safety)
     const handleNameSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -111,86 +104,141 @@ export function LoginPage() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
-            <div className="w-full max-w-sm space-y-8">
+        <div className="relative min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
+            <div className="mesh-background" />
+
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-sm space-y-8 z-10"
+            >
                 <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Xush kelibsiz!</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 drop-shadow-sm">Xush kelibsiz!</h1>
+                    <p className="text-gray-600 font-medium">
                         {step === 'PHONE' && "Ma'lumotlaringizni kiriting"}
                         {step === 'OTP' && `SMS kodni kiriting: ${phone}`}
                     </p>
                 </div>
 
-                {/* Step 1: Phone & Name */}
-                {step === 'PHONE' && (
-                    <div className="space-y-4">
-                        <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                            <div className="relative">
-                                <User className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
-                                <input
-                                    type="text"
-                                    placeholder="Ismingiz"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="flex h-12 w-full rounded-md border border-input bg-secondary/50 pl-11 pr-3 py-2 text-lg ring-offset-background outline-none focus:ring-2 focus:ring-primary"
-                                    required
-                                />
-                            </div>
+                <div className="liquid-glass p-8 rounded-[2.5rem] shadow-2xl border-white/40">
+                    <AnimatePresence mode="wait">
+                        {/* Step 1: Phone & Name */}
+                        {step === 'PHONE' && (
+                            <motion.div
+                                key="phone"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="space-y-6"
+                            >
+                                <form onSubmit={handlePhoneSubmit} className="space-y-4">
+                                    <div className="space-y-4">
+                                        <div className="relative group">
+                                            <User className="absolute left-4 top-3.5 h-5 w-5 text-gray-500 transition-colors group-focus-within:text-primary" />
+                                            <input
+                                                type="text"
+                                                placeholder="Ismingiz"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                className="liquid-input w-full pl-12 pr-4 py-3 text-lg outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900 placeholder:text-gray-400"
+                                                required
+                                            />
+                                        </div>
 
-                            <input
-                                type="tel"
-                                value={phone}
-                                onChange={handlePhoneChange}
-                                className="flex h-12 w-full rounded-md border border-input bg-secondary/50 px-3 py-2 text-lg ring-offset-background outline-none focus:ring-2 focus:ring-primary"
-                                required
-                            />
-                            <Button className="w-full h-12 text-lg" disabled={isLoading}>
-                                {isLoading ? <Loader2 className="animate-spin" /> : "Kodni olish"}
-                            </Button>
-                        </form>
-                    </div>
-                )}
+                                        <div className="relative group">
+                                            <Smartphone className="absolute left-4 top-3.5 h-5 w-5 text-gray-500 transition-colors group-focus-within:text-primary" />
+                                            <input
+                                                type="tel"
+                                                value={phone}
+                                                onChange={handlePhoneChange}
+                                                className="liquid-input w-full pl-12 pr-4 py-3 text-lg outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
 
-                {/* Step 2: OTP */}
-                {step === 'OTP' && (
-                    <form onSubmit={handleOtpSubmit} className="space-y-4">
-                        <input
-                            type="text"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            className="flex h-12 w-full rounded-md border border-input bg-secondary/50 px-3 py-2 text-lg text-center tracking-widest ring-offset-background outline-none focus:ring-2 focus:ring-primary"
-                            maxLength={4}
-                            required
-                        />
-                        <Button className="w-full h-12 text-lg" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="animate-spin" /> : "Tasdiqlash"}
-                        </Button>
-                        <button type="button" onClick={() => setStep('PHONE')} className="text-sm text-primary w-full text-center hover:underline">
-                            Raqamni o'zgartirish
-                        </button>
-                    </form>
-                )}
+                                    <button
+                                        type="submit"
+                                        className="liquid-button w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? <Loader2 className="animate-spin" /> : "Kodni olish"}
+                                    </button>
+                                </form>
+                            </motion.div>
+                        )}
 
-                {/* Step 3: Name */}
-                {step === 'NAME' && (
-                    <form onSubmit={handleNameSubmit} className="space-y-4">
-                        <div className="relative">
-                            <User className="absolute left-3 top-3 h-6 w-6 text-muted-foreground" />
-                            <input
-                                type="text"
-                                placeholder="Ismingiz (Masalan: Jamshid)"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                className="flex h-12 w-full rounded-md border border-input bg-secondary/50 pl-11 pr-3 py-2 text-lg ring-offset-background outline-none focus:ring-2 focus:ring-primary"
-                                required
-                            />
-                        </div>
-                        <Button className="w-full h-12 text-lg" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="animate-spin" /> : "Kirish"}
-                        </Button>
-                    </form>
-                )}
-            </div>
+                        {/* Step 2: OTP */}
+                        {step === 'OTP' && (
+                            <motion.div
+                                key="otp"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-6"
+                            >
+                                <form onSubmit={handleOtpSubmit} className="space-y-4">
+                                    <div className="relative group">
+                                        <KeyRound className="absolute left-4 top-3.5 h-5 w-5 text-gray-500 transition-colors group-focus-within:text-primary" />
+                                        <input
+                                            type="text"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value)}
+                                            placeholder="0000"
+                                            className="liquid-input w-full pl-12 pr-4 py-3 text-2xl text-center tracking-[1em] font-bold outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900"
+                                            maxLength={4}
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="liquid-button w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? <Loader2 className="animate-spin" /> : "Tasdiqlash"}
+                                    </button>
+                                    <button type="button" onClick={() => setStep('PHONE')} className="text-sm text-primary font-medium w-full text-center hover:underline opacity-80 hover:opacity-100 transition-opacity">
+                                        Raqamni o'zgartirish
+                                    </button>
+                                </form>
+                            </motion.div>
+                        )}
+
+                        {/* Step 3: Name */}
+                        {step === 'NAME' && (
+                            <motion.div
+                                key="name"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-6"
+                            >
+                                <form onSubmit={handleNameSubmit} className="space-y-4">
+                                    <div className="relative group">
+                                        <User className="absolute left-4 top-3.5 h-5 w-5 text-gray-500 transition-colors group-focus-within:text-primary" />
+                                        <input
+                                            type="text"
+                                            placeholder="Ismingiz (Masalan: Jamshid)"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            className="liquid-input w-full pl-12 pr-4 py-3 text-lg outline-none ring-2 ring-transparent focus:ring-primary/50 text-gray-900"
+                                            required
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="liquid-button w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? <Loader2 className="animate-spin" /> : "Kirish"}
+                                    </button>
+                                </form>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </motion.div>
         </div>
     );
 }
