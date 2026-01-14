@@ -4,12 +4,14 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrdersGateway } from './orders.gateway';
 import { OrderStatus } from '@prisma/client';
+import { TelegramBotService } from '../common/services/telegram-bot.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
-    private ordersGateway: OrdersGateway
+    private ordersGateway: OrdersGateway,
+    private telegramBotService: TelegramBotService
   ) { }
 
   async create(createOrderDto: CreateOrderDto) {
@@ -60,6 +62,16 @@ export class OrdersService {
     // this.ordersGateway.server.emit('newOrder', order); // Move to Controller or use EventEmmiter
 
     this.ordersGateway.emitNewOrder(order);
+
+    // Notify Admin via Telegram
+    try {
+      const adminSetting = await this.prisma.setting.findUnique({ where: { key: 'admin_chat_id' } });
+      if (adminSetting?.value) {
+        await this.telegramBotService.sendOrderNotification(adminSetting.value, order);
+      }
+    } catch (e) {
+      console.error("Failed to notify telegram", e);
+    }
 
     return order;
   }

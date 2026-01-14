@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom"
-import { LayoutDashboard, UtensilsCrossed, Settings, LogOut, ShoppingBag, LayoutGrid, ChefHat } from "lucide-react"
+import { LayoutDashboard, UtensilsCrossed, Settings, LogOut, ShoppingBag, LayoutGrid, ChefHat, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Sidebar() {
     const navItems = [
         { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+        { name: "Hisobotlar", icon: BarChart3, path: "/reports" },
         { name: "Mahsulotlar", icon: UtensilsCrossed, path: "/products" },
         { name: "Kategoriyalar", icon: LayoutGrid, path: "/categories" },
         { name: "Buyurtmalar", icon: ShoppingBag, path: "/orders" },
@@ -61,7 +62,14 @@ export function Sidebar() {
                         <p className="text-xs text-muted-foreground truncate">admin@sushi.uz</p>
                     </div>
                 </div>
-                <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 py-2 text-xs font-bold text-red-500 hover:bg-red-50 hover:border-red-100 transition-colors shadow-sm">
+                <button
+                    onClick={() => {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 py-2 text-xs font-bold text-red-500 hover:bg-red-50 hover:border-red-100 transition-colors shadow-sm"
+                >
                     <LogOut className="h-3.5 w-3.5" />
                     Tizimdan chiqish
                 </button>

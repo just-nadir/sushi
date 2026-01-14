@@ -20,6 +20,10 @@ export class TelegramBotService implements OnModuleInit {
     async onModuleInit() {
         if (!this.bot) return;
 
+        this.bot.command('start', (ctx) => {
+            ctx.reply(`Sizning ID: ${ctx.chat.id}\nBu ID ni sozlamalarga kiriting.`);
+        });
+
         this.bot.on('contact', async (ctx) => {
             const contact = ctx.message.contact;
             const telegramId = (contact.user_id || 0).toString();
@@ -70,5 +74,35 @@ export class TelegramBotService implements OnModuleInit {
         // Graceful stop
         process.once('SIGINT', () => this.bot.stop('SIGINT'));
         process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
+    }
+
+    async sendOrderNotification(chatId: string, order: any) {
+        if (!this.bot) return;
+
+        const itemsList = order.items.map((item: any) =>
+            `- ${item.product.name} x${item.quantity} (${(item.price * item.quantity).toLocaleString()} so'm)`
+        ).join('\n');
+
+        const message = `
+🆕 <b>Yangi Buyurtma #${order.id}</b>
+
+👤 <b>Mijoz:</b> ${order.customerName}
+📞 <b>Tel:</b> ${order.customerPhone}
+📍 <b>Manzil:</b> ${order.address || 'Belgilanmagan'}
+💳 <b>To'lov:</b> ${order.paymentType}
+
+🛒 <b>Buyurtma tarkibi:</b>
+${itemsList}
+
+📝 <b>Izoh:</b> ${order.comment || 'Yo\'q'}
+
+💰 <b>Jami: ${order.totalAmount.toLocaleString()} so'm</b>
+        `.trim();
+
+        try {
+            await this.bot.telegram.sendMessage(chatId, message, { parse_mode: 'HTML' });
+        } catch (error) {
+            console.error('Failed to send Telegram notification:', error);
+        }
     }
 }

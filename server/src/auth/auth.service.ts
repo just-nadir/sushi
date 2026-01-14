@@ -30,8 +30,8 @@ export class AuthService {
     }
 
     async sendOtp(phone: string): Promise<void> {
-        // const code = Math.floor(1000 + Math.random() * 9000).toString();
-        const code = '1111'; // Temporary fixed code for testing
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        // const code = '1111'; // Temporary fixed code for testing
         // Expires in 5 minutes
         this.otpStore.set(phone, { code, expires: Date.now() + 5 * 60 * 1000 });
         await this.smsService.sendOtp(phone, code);

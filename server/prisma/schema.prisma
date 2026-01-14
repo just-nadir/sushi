@@ -17,7 +17,9 @@ enum OrderStatus {
   CONFIRMED
   COOKING
   READY
-  DELIVERED
+  DELIVERY
+  COMPLETED
+  DELIVERED // Legacy? Keeping it just in case
   CANCELLED
 }
 
@@ -104,4 +106,12 @@ model OrderItem {
   
   order     Order   @relation(fields: [orderId], references: [id])
   orderId   Int
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  description String?
+  
+  updatedAt DateTime @updatedAt
 }

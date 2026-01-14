@@ -36,7 +36,7 @@ export class AuthController {
     async verifyOtp(@Body() body: { phone: string, code: string, telegramId?: string }) {
         const isValid = await this.authService.verifyOtp(body.phone, body.code);
         if (!isValid) {
-            throw new UnauthorizedException('Invalid OTP');
+            throw new UnauthorizedException('Tasdiqlash kodi noto\'g\'ri');
         }
 
         // Check if user exists by phone

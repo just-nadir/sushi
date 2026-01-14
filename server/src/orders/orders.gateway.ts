@@ -15,6 +15,7 @@ export class OrdersGateway {
   }
 
   emitOrderStatusUpdate(order: any) {
+    console.log("🚀 GATEWAY EMITTING orderStatusChanged:", order.id, order.status);
     this.server.emit('orderStatusChanged', order);
   }
 }

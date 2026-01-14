@@ -12,14 +12,14 @@ export class SmsService {
     private async getToken(): Promise<string> {
         if (this.token) return this.token;
 
-        const email = this.configService.get<string>('ESKIZ_EMAIL');
-        const password = this.configService.get<string>('ESKIZ_KEY'); // Using KEY as password/token secret
+        const email = this.configService.get<string>('ESKIZ_EMAIL') || 'abdullayevamalika880@gmail.com';
+        const password = this.configService.get<string>('ESKIZ_KEY') || 'KHgkYNJx3wOZaTx6OOJjBlUf9QwrZjWkUAZn7BPQ';
 
         try {
             // First try verify/login to get token
             const response = await axios.post('https://notify.eskiz.uz/api/auth/login', {
                 email,
-                password // Assuming the key is the password provided for API access
+                password
             });
 
             this.token = response.data.data.token;
@@ -33,15 +33,13 @@ export class SmsService {
     async sendOtp(phone: string, code: string): Promise<boolean> {
         try {
             const token = await this.getToken();
-            const message = `Sizning tasdiqlash kodingiz: ${code}`;
-
-            // Format phone: +998901234567 -> 998901234567 (Eskiz requires number without +)
             const cleanPhone = phone.replace(/\D/g, '');
+            const message = `"Sava Sushi" dasturidan ro'yhatdan o'tish uchun tasdiqlash kodi: ${code}`;
 
             await axios.post('https://notify.eskiz.uz/api/message/sms/send', {
                 mobile_phone: cleanPhone,
                 message: message,
-                from: '4546', // Standard Eskiz sender ID, might need adjustment if client has own ID
+                from: '4546', // Standard Eskiz sender ID
                 callback_url: ''
             }, {
                 headers: {

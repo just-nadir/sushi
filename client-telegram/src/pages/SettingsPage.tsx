@@ -1,12 +1,19 @@
 import { useNavigate } from "react-router-dom"
-import { ChevronLeft, Bell, Moon, Globe, LogOut, User as UserIcon } from "lucide-react"
+import { useState } from "react"
+import { ChevronLeft, Moon, Globe, LogOut, User as UserIcon } from "lucide-react"
 import { useAuthStore } from "@/lib/auth.store"
 
 export function SettingsPage() {
     const navigate = useNavigate()
     const { user, logout } = useAuthStore()
 
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
     const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    }
+
+    const confirmLogout = () => {
         logout();
         navigate('/login');
     }
@@ -30,7 +37,7 @@ export function SettingsPage() {
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-gray-900">
-                        {user?.firstName} {user?.lastName}
+                        {user?.fullName || "Foydalanuvchi"}
                     </h2>
                     <p className="text-gray-500 font-medium text-sm">
                         {user?.phone || "+998 -- --- -- --"}
@@ -39,7 +46,6 @@ export function SettingsPage() {
             </div>
 
             <div className="space-y-3">
-                <SettingItem icon={Bell} label="Bildirishnomalar" value="Yoqilgan" />
                 <SettingItem icon={Globe} label="Til" value="O'zbekcha" />
                 <SettingItem icon={Moon} label="Tunggi rejim" value="O'chirilgan" />
 
@@ -57,6 +63,31 @@ export function SettingsPage() {
             <div className="text-center text-sm text-gray-400 pt-8">
                 Versiya 1.0.0
             </div>
+            {/* Logout Confirmation Modal */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4">
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-gray-900">Tizimdan chiqish</h3>
+                            <p className="text-gray-500">Rostdan ham hisobingizdan chiqmoqchimisiz?</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowLogoutConfirm(false)}
+                                className="flex-1 h-12 rounded-xl bg-gray-100 text-gray-900 font-bold"
+                            >
+                                Yo'q
+                            </button>
+                            <button
+                                onClick={confirmLogout}
+                                className="flex-1 h-12 rounded-xl bg-red-500 text-white font-bold"
+                            >
+                                Ha, chiqish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -3,15 +3,16 @@ import { useCartStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { ArrowLeft, Copy } from "lucide-react";
+import { toast } from "sonner";
+import { useAuthStore } from "@/lib/auth.store";
 
 export function CheckoutPage() {
     const { items, total, clearCart } = useCartStore();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user } = useAuthStore();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
     const [errorLog, setErrorLog] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
@@ -23,20 +24,38 @@ export function CheckoutPage() {
         location: ""
     });
 
+    const [paymentInfo, setPaymentInfo] = useState({
+        card: "8600 1234 5678 9012",
+        phone: "+998 90 123 45 67"
+    });
+
     useEffect(() => {
+        // Fetch Settings
+        api.get('/settings').then(res => {
+            const settings = res.data;
+            const newInfo: any = {};
+            settings.forEach((s: any) => {
+                if (s.key === 'card_number') newInfo.card = s.value;
+                if (s.key === 'admin_phone') newInfo.phone = s.value;
+            });
+            if (newInfo.card || newInfo.phone) {
+                setPaymentInfo(prev => ({ ...prev, ...newInfo }));
+            }
+        }).catch(err => console.error(err));
+
         if (items.length === 0) {
             navigate("/");
         }
 
-        // Autofill from AuthContext
+        // Autofill from Auth Store
         if (user) {
             setFormData(prev => ({
                 ...prev,
-                name: user.fullName || user.username || prev.name,
+                name: user.fullName || prev.name,
                 phone: user.phone || prev.phone
             }));
         } else if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-            // Fallback to Telegram Data if not logged in (though AuthProvider should handle this)
+            // Fallback to Telegram Data if not logged in
             const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
             setFormData(prev => ({
                 ...prev,
@@ -44,30 +63,6 @@ export function CheckoutPage() {
             }));
         }
     }, [items, navigate, user]);
-
-    const handleLocation = () => {
-        setIsLoadingLocation(true);
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const loc = `${position.coords.latitude},${position.coords.longitude}`;
-                    setFormData(prev => ({ ...prev, location: loc }));
-                    setIsLoadingLocation(false);
-                    // Reverse geocoding could go here to fill address
-                    // For now, just show coordinates or a success message
-                    alert("Joylashuv aniqlandi!");
-                },
-                (error) => {
-                    console.error(error);
-                    alert("Joylashuvni aniqlab bo'lmadi. Iltimos manzilni o'zingiz kiriting.");
-                    setIsLoadingLocation(false);
-                }
-            );
-        } else {
-            alert("Sizning brauzeringizda joylashuvni aniqlash imkoni yo'q");
-            setIsLoadingLocation(false);
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -175,23 +170,13 @@ export function CheckoutPage() {
                 <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
                     <h2 className="font-semibold text-gray-900">Yetkazib berish</h2>
                     <div className="space-y-3">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full h-12 gap-2 text-primary border-primary/20 bg-primary/5 hover:bg-primary/10"
-                            onClick={handleLocation}
-                            disabled={isLoadingLocation}
-                        >
-                            {isLoadingLocation ? <Loader2 className="h-5 w-5 animate-spin" /> : <MapPin className="h-5 w-5" />}
-                            {formData.location ? "Joylashuv aniqlandi ✓" : "Mening joylashuvim"}
-                        </Button>
+
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Manzil (Mo'ljal) *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Manzil *</label>
                             <textarea
                                 required
                                 className="w-full px-4 py-3 rounded-lg bg-gray-50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none min-h-[80px]"
-                                placeholder="Chilonzor 1-mavze, 12-uy..."
                                 value={formData.address}
                                 onChange={e => setFormData({ ...formData, address: e.target.value })}
                             />
@@ -233,6 +218,30 @@ export function CheckoutPage() {
                             Karta (Click/Payme)
                         </button>
                     </div>
+
+                    {formData.paymentType === 'card' && (
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm space-y-2">
+                            <p className="font-medium text-blue-900">
+                                ℹ️ Hozircha avtoto'lov mavjud emas.
+                            </p>
+                            <p className="text-blue-800">
+                                Iltimos, quyidagi karta raqamiga <b>{total().toLocaleString()} so'm</b> o'tkazib,
+                                chekni <a href={`https://t.me/${paymentInfo.phone.replace(/\+/g, '').replace(/\s/g, '')}`} className="underline font-bold">{paymentInfo.phone}</a> raqamiga
+                                Telegram orqali yuboring.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(paymentInfo.card.replace(/\s/g, ''));
+                                    toast.success("Karta raqami nusxalandi!");
+                                }}
+                                className="w-full bg-white p-3 rounded-lg border border-blue-100 font-mono text-center font-bold text-lg text-slate-700 tracking-wider cursor-pointer active:scale-95 transition-all hover:bg-blue-50 hover:border-blue-200 flex items-center justify-center gap-2 group"
+                            >
+                                <span>{paymentInfo.card}</span>
+                                <Copy className="w-4 h-4 text-blue-300 group-hover:text-blue-500" />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Error Log */}

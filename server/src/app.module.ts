@@ -14,6 +14,8 @@ import { join } from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TelegramBotService } from './common/services/telegram-bot.service';
 
+import { SettingsModule } from './settings/settings.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -27,9 +29,10 @@ import { TelegramBotService } from './common/services/telegram-bot.service';
     AuthModule,
     UsersModule,
     OrdersModule,
-    FilesModule
+    FilesModule,
+    SettingsModule
   ],
   controllers: [AppController],
-  providers: [AppService, OrdersGateway, TelegramBotService],
+  providers: [AppService, OrdersGateway],
 })
 export class AppModule { }

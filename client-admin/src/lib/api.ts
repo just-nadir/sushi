@@ -9,6 +9,14 @@ export const api = axios.create({
     },
 });
 
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 export interface Category {
     id: string;
     name: string;
@@ -43,7 +51,14 @@ export const uploadFile = async (file: File) => {
 // Interceptor for unwrapping response
 api.interceptors.response.use((response) => {
     if (response.data && response.data.success) {
-        return response.data; // Return { success: true, data: ... }
+        return response.data;
     }
     return response;
+}, (error) => {
+    if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+    }
+    return Promise.reject(error);
 });

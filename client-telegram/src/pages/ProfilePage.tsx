@@ -1,21 +1,15 @@
-import { useAuth } from "@/context/AuthContext"
+import { useAuthStore } from "@/lib/auth.store"
 import { motion } from "framer-motion"
 import { LogOut, User, Phone, ShoppingBag, Settings, ChevronRight } from "lucide-react"
 
 export function ProfilePage() {
-    const { user, logout } = useAuth()
+    const { user, logout } = useAuthStore()
 
     return (
         <div className="space-y-6 pb-24">
             {/* Header */}
             <div className="flex items-center justify-between pt-4 px-2">
                 <h1 className="text-2xl font-bold text-gray-900">Profil</h1>
-                <button
-                    onClick={logout}
-                    className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
-                >
-                    <LogOut className="w-5 h-5" />
-                </button>
             </div>
 
             {/* User Card */}

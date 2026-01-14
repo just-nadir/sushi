@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { Save, Store, Truck, Clock, Lock, Upload } from "lucide-react";
+import { Save, Store, Truck, Clock, Lock, Upload, CreditCard } from "lucide-react";
+import { api } from "@/lib/api";
 
 export function SettingsPage() {
     const [restaurantInfo, setRestaurantInfo] = useState({
@@ -18,15 +19,64 @@ export function SettingsPage() {
         avgTime: "45-60"
     });
 
+    const [paymentInfo, setPaymentInfo] = useState({
+        card_number: "8600 1234 5678 9012",
+        admin_phone: "+998 90 123 45 67",
+        admin_chat_id: ""
+    });
+
     const [passwordData, setPasswordData] = useState({
         current: "",
         new: "",
         confirm: ""
     });
 
-    const handleSave = (section: string) => {
-        // Mock save
-        toast.success(`${section} muvaffaqiyatli saqlandi`);
+    const [telegramUsers, setTelegramUsers] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetchSettings();
+        fetchTelegramUsers();
+    }, []);
+
+    const fetchTelegramUsers = async () => {
+        try {
+            const res = await api.get('/settings/telegram-users');
+            setTelegramUsers(res.data);
+        } catch (error) {
+            console.error("Failed to fetch telegram users", error);
+        }
+    };
+
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get('/settings');
+            const settings = res.data;
+            // Map array of {key, value} to our state objects
+            const paymentUpdates: any = {};
+            settings.forEach((s: any) => {
+                if (s.key === 'card_number' || s.key === 'admin_phone' || s.key === 'admin_chat_id') {
+                    paymentUpdates[s.key] = s.value;
+                }
+            });
+            if (Object.keys(paymentUpdates).length > 0) {
+                setPaymentInfo(prev => ({ ...prev, ...paymentUpdates }));
+            }
+        } catch (error) {
+            console.error("Failed to fetch settings", error);
+        }
+    };
+
+    const handleSave = async (section: string, _data?: any) => {
+        try {
+            if (section === "To'lov") {
+                await api.patch('/settings/card_number', { value: paymentInfo.card_number });
+                await api.patch('/settings/admin_phone', { value: paymentInfo.admin_phone });
+                await api.patch('/settings/admin_chat_id', { value: paymentInfo.admin_chat_id });
+            }
+            toast.success(`${section} muvaffaqiyatli saqlandi`);
+        } catch (error) {
+            toast.error("Saqlashda xatolik yuz berdi");
+        }
     };
 
     return (
@@ -86,6 +136,64 @@ export function SettingsPage() {
 
                     <div className="flex justify-end pt-4 border-t">
                         <Button onClick={() => handleSave("Ma'lumotlar")} className="gap-2">
+                            <Save className="h-4 w-4" /> Saqlash
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Payment Settings */}
+            <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-gray-500" />
+                        <h2 className="text-lg font-semibold text-gray-900">To'lov Ma'lumotlari</h2>
+                    </div>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Karta Raqami</label>
+                        <input
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                            value={paymentInfo.card_number}
+                            onChange={e => setPaymentInfo({ ...paymentInfo, card_number: e.target.value })}
+                            placeholder="8600 1234 5678 9012"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Chek yuborish uchun raqam</label>
+                        <input
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            value={paymentInfo.admin_phone}
+                            onChange={e => setPaymentInfo({ ...paymentInfo, admin_phone: e.target.value })}
+                            placeholder="+998 90 123 45 67"
+                        />
+                    </div>
+                    <div className="md:col-span-2 space-y-2 pt-2 border-t">
+                        <label className="text-sm font-medium text-gray-700 flex justify-between">
+                            <span>Telegram ID (Buyurtma xabarlarini olish uchun)</span>
+                            <span className="text-xs text-blue-600 cursor-pointer" onClick={() => toast.info("Ro'yxatda ismingiz chiqmasa, Botga /start bosing")}>
+                                Ismingiz chiqmayaptimi?
+                            </span>
+                        </label>
+                        <select
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-white"
+                            value={paymentInfo.admin_chat_id}
+                            onChange={e => setPaymentInfo({ ...paymentInfo, admin_chat_id: e.target.value })}
+                        >
+                            <option value="">-- Tanlang --</option>
+                            {telegramUsers.map((user: any) => (
+                                <option key={user.telegramId} value={user.telegramId}>
+                                    {user.fullName} ({user.phone})
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500">
+                            Xabarnoma yuboriladigan foydalanuvchini tanlang. Ro'yxatda ko'rinish uchun avval botga <b>/start</b> bosing.
+                        </p>
+                    </div>
+                    <div className="md:col-span-2 flex justify-end pt-4 border-t mt-2">
+                        <Button onClick={() => handleSave("To'lov")} className="gap-2">
                             <Save className="h-4 w-4" /> Saqlash
                         </Button>
                     </div>

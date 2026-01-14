@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth.store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { socket } from "@/lib/socket";
 
 interface OrderItem {
@@ -36,30 +36,45 @@ export function HistoryPage() {
         queryFn: async () => {
             if (!userPhone) return [];
 
-            // CLEANING PHONE NUMBER: Remove ALL non-digits (including +)
-            // This ensures we search for "998901234567" which will match "+998901234567" or "998901234567" in DB via contains.
-            const cleanPhone = userPhone.replace(/\D/g, '');
-
-            const res = await api.get<Order[]>(`/orders?phone=${cleanPhone}`);
+            // Send phone as-is to match the DB format (which might contain spaces)
+            const res = await api.get<Order[]>(`/orders?phone=${encodeURIComponent(userPhone)}`);
             return res.data;
         },
         enabled: !!userPhone
     });
 
     // Real-time updates
-    useEffect(() => {
-        socket.connect();
+    const [isConnected, setIsConnected] = useState(socket.connected);
 
-        socket.on('orderStatusChanged', (updatedOrder: Order) => {
-            // Check if this order belongs to current user lists (optimization)
-            // Or just invalidate all 'my-orders' queries
-            console.log("Order updated:", updatedOrder);
+    useEffect(() => {
+        const onConnect = () => setIsConnected(true);
+        const onDisconnect = () => setIsConnected(false);
+
+        const onOrderUpdate = (updatedOrder: Order) => {
+            console.log("🔥 SOCKET RECEIVED:", updatedOrder);
+
+            // Direct cache update for immediate feedback
+            queryClient.setQueryData(['my-orders', userPhone], (oldData: Order[] | undefined) => {
+                if (!oldData) return oldData;
+                return oldData.map(o => o.id === updatedOrder.id ? updatedOrder : o);
+            });
+
+            // Fallback invalidation
             queryClient.invalidateQueries({ queryKey: ['my-orders'] });
-        });
+        };
+
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+        socket.on('orderStatusChanged', onOrderUpdate);
+
+        if (!socket.connected) {
+            socket.connect();
+        }
 
         return () => {
-            socket.disconnect();
-            socket.off('orderStatusChanged');
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+            socket.off('orderStatusChanged', onOrderUpdate);
         };
     }, [queryClient]);
 
@@ -105,12 +120,20 @@ export function HistoryPage() {
 
     return (
         <div className="space-y-6 pb-24 pt-4">
-            <h1 className="text-2xl font-bold px-4">Buyurtmalarim</h1>
-
-            {/* Debug Info (Temporary) */}
-            <div className="px-4 text-xs text-gray-400">
-                Tel: {userPhone} (Formatlangan: {userPhone.replace(/\D/g, '')})
+            <div className="flex items-center justify-between px-4">
+                <h1 className="text-2xl font-bold">Buyurtmalarim</h1>
+                <div className="flex items-center gap-2">
+                    <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <button
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['my-orders'] })}
+                        className="p-2 hover:bg-gray-100 rounded-full"
+                    >
+                        <Loader2 className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
             </div>
+
+
 
             <div className="space-y-3 px-4">
                 {orders?.map((order, i) => (
