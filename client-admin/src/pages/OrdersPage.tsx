@@ -193,7 +193,13 @@ export function OrdersPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="mt-6 pt-4 border-t flex justify-between items-center">
+                                {(selectedOrder.deliveryPrice || 0) > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-dashed flex justify-between items-center text-sm">
+                                        <span className="font-medium text-gray-600">Yetkazib berish</span>
+                                        <span className="font-medium text-gray-900">{Number(selectedOrder.deliveryPrice).toLocaleString()} so'm</span>
+                                    </div>
+                                )}
+                                <div className="mt-4 pt-4 border-t flex justify-between items-center">
                                     <span className="font-bold text-lg">Jami</span>
                                     <span className="font-bold text-xl text-primary">{Number(selectedOrder.totalAmount).toLocaleString()} so'm</span>
                                 </div>

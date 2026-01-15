@@ -21,7 +21,13 @@ export class TelegramBotService implements OnModuleInit {
         if (!this.bot) return;
 
         this.bot.command('start', (ctx) => {
-            ctx.reply(`Sizning ID: ${ctx.chat.id}\nBu ID ni sozlamalarga kiriting.`);
+            ctx.reply('Xush kelibsiz! Buyurtma berish uchun quyidagi tugmani bosing 👇', {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "🛍 Buyurtma berish", web_app: { url: "https://nadpos.uz/tgapp" } }]
+                    ]
+                }
+            });
         });
 
         this.bot.on('contact', async (ctx) => {

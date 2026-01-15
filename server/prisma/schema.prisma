@@ -76,6 +76,7 @@ model Order {
   status      OrderStatus @default(NEW)
   type        OrderType   @default(DELIVERY)
   totalAmount Float
+  deliveryPrice Float @default(0)
   
   address     String?
   locationLat Float?

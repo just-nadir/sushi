@@ -8,7 +8,10 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth.store";
 import { motion } from "framer-motion";
 
+import { useIsInputFocused } from "@/hooks/useIsInputFocused";
+
 export function CheckoutPage() {
+    const isInputFocused = useIsInputFocused();
     const { items, total, clearCart } = useCartStore();
     const navigate = useNavigate();
     const { user } = useAuthStore();
@@ -29,6 +32,7 @@ export function CheckoutPage() {
         card: "8600 1234 5678 9012",
         phone: "+998 90 123 45 67"
     });
+    const [deliveryPrice, setDeliveryPrice] = useState(0);
 
     useEffect(() => {
         // Fetch Settings
@@ -38,6 +42,7 @@ export function CheckoutPage() {
             settings.forEach((s: any) => {
                 if (s.key === 'card_number') newInfo.card = s.value;
                 if (s.key === 'admin_phone') newInfo.phone = s.value;
+                if (s.key === 'delivery_price') setDeliveryPrice(Number(s.value));
             });
             if (newInfo.card || newInfo.phone) {
                 setPaymentInfo(prev => ({ ...prev, ...newInfo }));
@@ -128,10 +133,10 @@ export function CheckoutPage() {
     };
 
     return (
-        <div className="min-h-screen pb-32">
+        <div className="min-h-screen pb-32 pt-24">
             {/* Header */}
-            <div className="sticky top-0 z-30 pt-4 pb-2 px-4 -mx-4">
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-2 rounded-2xl mx-4 border border-white/20 shadow-lg">
+            <div className="mb-4 px-4">
+                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-lg">
                     <button onClick={() => navigate(-1)} className="p-2 bg-white/20 rounded-xl hover:bg-white/30 text-white transition-colors">
                         <ArrowLeft className="h-5 w-5 text-gray-800" />
                     </button>
@@ -262,7 +267,7 @@ export function CheckoutPage() {
                                 ℹ️ Hozircha avtoto'lov mavjud emas.
                             </p>
                             <p className="text-blue-800 leading-relaxed">
-                                Iltimos, quyidagi karta raqamiga <b className="text-blue-900 bg-blue-200/50 px-1 rounded">{total().toLocaleString()} so'm</b> o'tkazib,
+                                Iltimos, quyidagi karta raqamiga <b className="text-blue-900 bg-blue-200/50 px-1 rounded">{(total() + deliveryPrice).toLocaleString()} so'm</b> o'tkazib,
                                 chekni <a href={`https://t.me/${paymentInfo.phone.replace(/\+/g, '').replace(/\s/g, '')}`} className="underline font-bold hover:text-blue-600">{paymentInfo.phone}</a> raqamiga
                                 Telegram orqali yuboring.
                             </p>
@@ -281,6 +286,28 @@ export function CheckoutPage() {
                     )}
                 </motion.div>
 
+                {/* Order Summary */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="liquid-card p-5 space-y-3"
+                >
+                    <h2 className="font-bold text-gray-900">Buyurtma xulosasi</h2>
+                    <div className="flex justify-between text-sm text-gray-600">
+                        <span>Mahsulotlar</span>
+                        <span>{total().toLocaleString()} so'm</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                        <span>Yetkazib berish</span>
+                        <span>{deliveryPrice.toLocaleString()} so'm</span>
+                    </div>
+                    <div className="border-t pt-2 mt-2 flex justify-between font-bold text-gray-900 text-lg">
+                        <span>Jami</span>
+                        <span>{(total() + deliveryPrice).toLocaleString()} so'm</span>
+                    </div>
+                </motion.div>
+
                 {/* Error Log */}
                 {errorLog && (
                     <motion.div
@@ -294,22 +321,24 @@ export function CheckoutPage() {
                 )}
 
                 {/* Summary & Submit */}
-                <div className="fixed bottom-20 left-4 right-4 z-40">
-                    <div className="liquid-glass border-none !bg-black/80 !text-white p-4 rounded-[2rem] shadow-2xl flex items-center justify-between backdrop-blur-xl">
-                        <div className="flex flex-col pl-2">
-                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Jami to'lov</p>
-                            <p className="text-xl font-bold">{total().toLocaleString()} <span className="text-sm font-normal text-gray-400">so'm</span></p>
+                {/* Summary & Submit */}
+                {!isInputFocused && (
+                    <div className="fixed left-4 right-4 z-40" style={{ bottom: "calc(70px + env(safe-area-inset-bottom, 20px))" }}>
+                        <div className="liquid-glass border-none !bg-black/80 !text-white p-4 rounded-[2rem] shadow-2xl flex items-center justify-between backdrop-blur-xl">
+                            <div className="flex flex-col pl-2">
+                                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Jami to'lov</p>
+                                <p className="text-xl font-bold">{(total() + deliveryPrice).toLocaleString()} <span className="text-sm font-normal text-gray-400">so'm</span></p>
+                            </div>
+                            <Button
+                                type="submit"
+                                className="px-8 h-12 rounded-xl text-lg font-bold bg-white text-black hover:bg-gray-200 shadow-lg shadow-white/10 active:scale-95 transition-all"
+                                isLoading={isSubmitting}
+                            >
+                                Tasdiqlash
+                            </Button>
                         </div>
-                        <Button
-                            type="submit"
-                            className="px-8 h-12 rounded-xl text-lg font-bold bg-white text-black hover:bg-gray-200 shadow-lg shadow-white/10 active:scale-95 transition-all"
-                            isLoading={isSubmitting}
-                        >
-                            Tasdiqlash
-                        </Button>
                     </div>
-                </div>
-
+                )}
             </form>
         </div>
     );

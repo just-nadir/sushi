@@ -208,7 +208,9 @@ export function HomePage() {
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 100, opacity: 0 }}
-                        className="fixed bottom-[90px] left-4 right-4 z-40 max-w-md mx-auto"
+                        // 70px (nav height) + safe-area (from pb-safe, default 20px) = calc(70px + env(safe-area-inset-bottom, 20px))
+                        className="fixed left-4 right-4 z-40 max-w-md mx-auto"
+                        style={{ bottom: "calc(70px + env(safe-area-inset-bottom, 20px))" }}
                     >
                         <div className="liquid-glass border-none !bg-black/80 !text-white p-3 px-5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer active:scale-95 transition-transform" onClick={() => navigate('/cart')}>
                             <div className="flex flex-col">

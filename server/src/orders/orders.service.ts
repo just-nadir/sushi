@@ -31,6 +31,16 @@ export class OrdersService {
       }
     }
 
+    // Delivery Fee Logic
+    let deliveryPrice = 0;
+    if (createOrderDto.type === 'DELIVERY') {
+      const deliverySetting = await this.prisma.setting.findUnique({ where: { key: 'delivery_price' } });
+      if (deliverySetting?.value) {
+        deliveryPrice = parseFloat(deliverySetting.value);
+        totalAmount += deliveryPrice;
+      }
+    }
+
     // 2. Create Order
     const order = await this.prisma.order.create({
       data: {
@@ -43,6 +53,7 @@ export class OrdersService {
         customerPhone: createOrderDto.customerPhone,
         paymentType: createOrderDto.paymentType,
         totalAmount,
+        deliveryPrice,
         status: OrderStatus.NEW,
         items: {
           create: orderItemsData

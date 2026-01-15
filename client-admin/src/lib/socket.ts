@@ -18,5 +18,6 @@ export interface Order {
     paymentType: 'CASH' | 'card';
     location?: string;
     address?: string;
+    deliveryPrice?: number;
     items: any[];
 }

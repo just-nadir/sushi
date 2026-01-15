@@ -52,14 +52,27 @@ export function SettingsPage() {
             const res = await api.get('/settings');
             const settings = res.data;
             // Map array of {key, value} to our state objects
+            // Map settings
             const paymentUpdates: any = {};
+            const deliveryUpdates: any = {};
+
             settings.forEach((s: any) => {
-                if (s.key === 'card_number' || s.key === 'admin_phone' || s.key === 'admin_chat_id') {
+                if (['card_number', 'admin_phone', 'admin_chat_id'].includes(s.key)) {
                     paymentUpdates[s.key] = s.value;
                 }
+                if (['delivery_price', 'minOrder', 'avgTime'].includes(s.key)) {
+                    // map DB keys to state keys if different, but here they match mostly.
+                    // 'delivery_price' -> 'price'
+                    if (s.key === 'delivery_price') deliveryUpdates.price = s.value;
+                    else deliveryUpdates[s.key] = s.value;
+                }
             });
+
             if (Object.keys(paymentUpdates).length > 0) {
                 setPaymentInfo(prev => ({ ...prev, ...paymentUpdates }));
+            }
+            if (Object.keys(deliveryUpdates).length > 0) {
+                setDeliveryInfo(prev => ({ ...prev, ...deliveryUpdates }));
             }
         } catch (error) {
             console.error("Failed to fetch settings", error);
@@ -72,6 +85,10 @@ export function SettingsPage() {
                 await api.patch('/settings/card_number', { value: paymentInfo.card_number });
                 await api.patch('/settings/admin_phone', { value: paymentInfo.admin_phone });
                 await api.patch('/settings/admin_chat_id', { value: paymentInfo.admin_chat_id });
+            } else if (section === "Yetkazib berish") {
+                await api.patch('/settings/delivery_price', { value: deliveryInfo.price });
+                await api.patch('/settings/minOrder', { value: deliveryInfo.minOrder });
+                await api.patch('/settings/avgTime', { value: deliveryInfo.avgTime });
             }
             toast.success(`${section} muvaffaqiyatli saqlandi`);
         } catch (error) {
