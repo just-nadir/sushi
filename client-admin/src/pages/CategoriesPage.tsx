@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { Plus, Pencil, Trash2, GripVertical, X } from "lucide-react";
 import { api, Category } from "@/lib/api";
@@ -6,88 +7,107 @@ import { toast } from "sonner";
 import { Reorder, useDragControls } from "framer-motion";
 
 export function CategoriesPage() {
-    const [categories, setCategories] = useState<Category[]>([]);
+    const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
-    // Form containing only Name (User asked to remove SortOrder column and maybe logic too, but backend might need it. We handle sortOrder via DnD)
-    // Image is removed from table, but maybe needed in modal? "Rasm va tartib raqami ustunlarini olib tashla" (Remove columns).
-    // I will keep Image in modal because it's needed for the menu display in client-telegram.
+    // Form containing only Name
     const [formData, setFormData] = useState({
         name: "",
-        image: "" // Still keep image logic for data, just hide from list view if requested, or maybe user implied removing it completely? 
-        // "Rasm ... ustunlarini olib tashla" -> Remove columns. Usually image is vital for menu. I'll keep it in modal.
+        image: ""
     });
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
-        try {
+    const { data: categories = [], isLoading } = useQuery({
+        queryKey: ["categories"],
+        queryFn: async () => {
             const res = await api.get("/categories");
             const data = (res.data.data || res.data || []) as Category[];
-            // Sort by sortOrder
-            const sorted = Array.isArray(data) ? data.sort((a, b) => a.sortOrder - b.sortOrder) : [];
-            setCategories(sorted);
-        } catch (error) {
-            console.error(error);
-            toast.error("Yuklashda xatolik");
+            return Array.isArray(data) ? data.sort((a, b) => a.sortOrder - b.sortOrder) : [];
         }
-    };
+    });
+
+    // We need local state for DnD to work smoothly immediately
+    const [localCategories, setLocalCategories] = useState<Category[]>([]);
+
+    useEffect(() => {
+        if (categories.length > 0) {
+            setLocalCategories(categories);
+        }
+    }, [categories]);
+
+    const reorderMutation = useMutation({
+        mutationFn: async (newOrder: Category[]) => {
+            const updates = newOrder.map((cat, index) =>
+                api.patch(`/categories/${cat.id}`, { sortOrder: index })
+            );
+            await Promise.all(updates);
+        },
+        onSuccess: () => {
+            toast.success("Tartib saqlandi");
+            queryClient.invalidateQueries({ queryKey: ["categories"] });
+        },
+        onError: () => {
+            toast.error("Tartibni saqlashda xatolik");
+        }
+    });
+
+    const createMutation = useMutation({
+        mutationFn: async (data: any) => {
+            const maxSort = Math.max(...(categories?.map(c => c.sortOrder) || [0]), 0);
+            return api.post("/categories", { ...data, sortOrder: maxSort + 1 });
+        },
+        onSuccess: () => {
+            toast.success("Yaratildi");
+            closeModal();
+            queryClient.invalidateQueries({ queryKey: ["categories"] });
+        },
+        onError: () => toast.error("Xatolik")
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, data }: { id: string, data: any }) => {
+            return api.patch(`/categories/${id}`, data);
+        },
+        onSuccess: () => {
+            toast.success("Yangilandi");
+            closeModal();
+            queryClient.invalidateQueries({ queryKey: ["categories"] });
+        },
+        onError: () => toast.error("Xatolik")
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => api.delete(`/categories/${id}`),
+        onSuccess: () => {
+            toast.success("O'chirildi");
+            queryClient.invalidateQueries({ queryKey: ["categories"] });
+        },
+        onError: () => toast.error("Xatolik")
+    });
 
     const handleReorder = (newOrder: Category[]) => {
-        setCategories(newOrder);
+        setLocalCategories(newOrder);
     };
 
     // Save order when drag ends
     const handleDragEnd = async () => {
-        // Send updates to backend
-        // We simply map index as sortOrder
-        try {
-            const updates = categories.map((cat, index) =>
-                api.patch(`/categories/${cat.id}`, { sortOrder: index })
-            );
-            await Promise.all(updates);
-            toast.success("Tartib saqlandi");
-        } catch (error) {
-            console.error(error);
-            toast.error("Tartibni saqlashda xatolik");
-        }
+        reorderMutation.mutate(localCategories);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            const payload = { ...formData };
+        const payload = { ...formData }; // No image upload logic here as per previous code
 
-            if (editingId) {
-                await api.patch(`/categories/${editingId}`, payload);
-                toast.success("Yangilandi");
-            } else {
-                // For new category, put it at the end
-                const maxSort = Math.max(...categories.map(c => c.sortOrder), 0);
-                await api.post("/categories", { ...payload, sortOrder: maxSort + 1 });
-                toast.success("Yaratildi");
-            }
-            closeModal();
-            loadData();
-        } catch (error) {
-            console.error(error);
-            toast.error("Xatolik");
+        if (editingId) {
+            updateMutation.mutate({ id: editingId, data: payload });
+        } else {
+            createMutation.mutate(payload);
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Kategoriyani o'chirasizmi?")) return;
-        try {
-            await api.delete(`/categories/${id}`);
-            toast.success("O'chirildi");
-            loadData();
-        } catch (error) {
-            console.error(error);
-            toast.error("Xatolik");
-        }
+        deleteMutation.mutate(id);
     };
 
     const openEdit = (cat: Category) => {
@@ -126,11 +146,11 @@ export function CategoriesPage() {
                     <Reorder.Group
                         as="ol"
                         axis="y"
-                        values={categories}
+                        values={localCategories}
                         onReorder={handleReorder}
                         className="list-none p-0 m-0 flex flex-col gap-3"
                     >
-                        {categories.map((cat) => (
+                        {localCategories.map((cat) => (
                             <CategoryItem
                                 key={cat.id}
                                 category={cat}
@@ -141,7 +161,11 @@ export function CategoriesPage() {
                         ))}
                     </Reorder.Group>
 
-                    {categories.length === 0 && (
+                    {isLoading && (
+                        <div className="text-center py-10">Yuklanmoqda...</div>
+                    )}
+
+                    {!isLoading && localCategories.length === 0 && (
                         <div className="text-center py-20 text-gray-400">
                             Kategoriyalar mavjud emas
                         </div>

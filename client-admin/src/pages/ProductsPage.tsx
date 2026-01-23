@@ -1,13 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Plus, Search, Upload, Trash2, Pencil, Filter, X } from "lucide-react";
-import { api, Product, Category, uploadFile } from "@/lib/api";
+import { Product, Category, uploadFile } from "@/lib/api";
 import { toast } from "sonner";
+import {
+    useProductsControllerFindAll,
+    useProductsControllerCreate,
+    useProductsControllerUpdate,
+    useProductsControllerRemove,
+    useCategoriesControllerFindAll
+} from "@/lib/api/generated";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function ProductsPage() {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
+
+    // Data Fetching
+    const { data: productsRaw, isLoading: pLoading } = useProductsControllerFindAll();
+    const { data: categoriesRaw, isLoading: cLoading } = useCategoriesControllerFindAll();
+
+    const products = ((productsRaw?.data || []) as unknown) as Product[];
+    const categories = ((categoriesRaw?.data || []) as unknown) as Category[];
+    const isLoading = pLoading || cLoading;
 
     // Filter State
     const [searchQuery, setSearchQuery] = useState("");
@@ -27,30 +41,38 @@ export function ProductsPage() {
         image: ""
     });
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
-        try {
-            setIsLoading(true);
-            const [prodRes, catRes] = await Promise.all([
-                api.get("/products"),
-                api.get("/categories")
-            ]);
-
-            const pData = prodRes.data.data || prodRes.data || [];
-            const cData = catRes.data.data || catRes.data || [];
-
-            setProducts(Array.isArray(pData) ? pData : []);
-            setCategories(Array.isArray(cData) ? cData : []);
-        } catch (error) {
-            console.error("Failed to load data", error);
-            toast.error("Ma'lumotlarni yuklashda xatolik");
-        } finally {
-            setIsLoading(false);
+    // Mutations
+    const createMutation = useProductsControllerCreate({
+        mutation: {
+            onSuccess: () => {
+                toast.success("Mahsulot qo'shildi");
+                queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+                closeModal();
+            },
+            onError: () => toast.error("Saqlashda xatolik yuz berdi")
         }
-    };
+    });
+
+    const updateMutation = useProductsControllerUpdate({
+        mutation: {
+            onSuccess: () => {
+                toast.success("Mahsulot yangilandi");
+                queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+                closeModal();
+            },
+            onError: () => toast.error("Saqlashda xatolik yuz berdi")
+        }
+    });
+
+    const deleteMutation = useProductsControllerRemove({
+        mutation: {
+            onSuccess: () => {
+                toast.success("Mahsulot o'chirildi");
+                queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+            },
+            onError: () => toast.error("O'chirishda xatolik")
+        }
+    });
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -71,39 +93,21 @@ export function ProductsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            const payload = {
-                ...formData,
-                price: Number(formData.price)
-            };
+        const payload = {
+            ...formData,
+            price: Number(formData.price)
+        };
 
-            if (editingId) {
-                await api.patch(`/products/${editingId}`, payload);
-                toast.success("Mahsulot yangilandi");
-            } else {
-                await api.post("/products", payload);
-                toast.success("Mahsulot qo'shildi");
-            }
-
-            closeModal();
-            loadData();
-        } catch (error) {
-            console.error(error);
-            toast.error("Saqlashda xatolik yuz berdi");
+        if (editingId) {
+            updateMutation.mutate({ id: editingId, data: payload });
+        } else {
+            createMutation.mutate({ data: payload });
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm("Haqiqatan ham bu mahsulotni o'chirmoqchimisiz?")) return;
-
-        try {
-            await api.delete(`/products/${id}`);
-            toast.success("Mahsulot o'chirildi");
-            loadData();
-        } catch (error) {
-            console.error(error);
-            toast.error("O'chirishda xatolik");
-        }
+        deleteMutation.mutate({ id });
     };
 
     const openEditModal = (product: Product) => {

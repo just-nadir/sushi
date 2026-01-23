@@ -1,37 +1,36 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { socket, Order } from "@/lib/socket";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { api } from "@/lib/api";
+import { useOrdersControllerFindAll, getOrdersControllerFindAllQueryKey } from "@/lib/api/generated";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function ReportsPage() {
-    const [orders, setOrders] = useState<Order[]>([]);
+    const queryClient = useQueryClient();
+
+    const { data: ordersRaw } = useOrdersControllerFindAll({} as any);
+    const orders = ((ordersRaw?.data || []) as unknown) as Order[];
 
     useEffect(() => {
-        // 1. Initial Fetch
-        api.get('/orders')
-            .then(res => {
-                const data = res.data || res;
-                const ordersData = Array.isArray(data) ? data : (data.data || []);
-                if (Array.isArray(ordersData)) {
-                    setOrders(ordersData);
-                } else {
-                    setOrders([]);
-                }
-            })
-            .catch(err => console.error(err));
-
-        // 2. Socket Listeners
+        // Socket Listeners
         if (!socket.connected) {
             socket.connect();
         }
 
         const onNewOrder = (newOrder: Order) => {
-            setOrders(prev => [newOrder, ...prev]);
+            queryClient.setQueryData(getOrdersControllerFindAllQueryKey({} as any), (old: any) => {
+                const oldData = old?.data || [];
+                return { ...old, data: [newOrder, ...oldData] };
+            });
+            // Also invalidate to be sure
+            queryClient.invalidateQueries({ queryKey: getOrdersControllerFindAllQueryKey({} as any) });
         };
 
         const onStatusChange = (updatedOrder: Order) => {
-            setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+            queryClient.setQueryData(getOrdersControllerFindAllQueryKey({} as any), (old: any) => {
+                const oldData = old?.data || [];
+                return { ...old, data: oldData.map((o: Order) => o.id === updatedOrder.id ? updatedOrder : o) };
+            });
         };
 
         socket.on('newOrder', onNewOrder);
@@ -40,15 +39,8 @@ export function ReportsPage() {
         return () => {
             socket.off('newOrder', onNewOrder);
             socket.off('orderStatusChanged', onStatusChange);
-            // Don't disconnect here if other pages use it, or ensure they reconnect.
-            // For now, we'll leave it connected or let the next page handle connection.
-            // If we strictly want to clean up:
-            // socket.disconnect(); 
-            // But usually for a SPA, keeping socket open is fine. 
-            // If we specifically want to fix the 400 error which might be due to too many connection attempts:
-            // We verify connection status.
         };
-    }, []);
+    }, [queryClient]);
 
     // --- Analytics Calculations ---
     const { chartData, topProducts } = useMemo(() => {

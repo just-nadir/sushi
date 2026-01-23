@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -11,6 +12,16 @@ async function bootstrap() {
 
   // Security Headers
   app.use(helmet());
+
+  // Swagger Setup
+  const config = new DocumentBuilder()
+    .setTitle('Sushi API')
+    .setDescription('The Sushi Delivery API description')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Enable CORS
   app.enableCors({

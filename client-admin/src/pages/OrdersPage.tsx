@@ -1,10 +1,22 @@
 import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
-import { socket, Order } from "@/lib/socket";
+// import { api } from "@/lib/api"; // Removed manual api
+import { socket } from "@/lib/socket";
+// Actually generated hooks might use their own types, but let's stick to simple casting if needed or check generated types.
+// Generated `OrdersControllerFindAll200Item` is loose.
 import { toast } from "sonner";
 import { Eye, Printer, MapPin, Phone, User, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import {
+    useOrdersControllerFindAll,
+    useOrdersControllerUpdate,
+    getOrdersControllerFindAllQueryKey
+} from "@/lib/api/generated";
+import { useQueryClient } from "@tanstack/react-query";
+
+// Reuse Order interface from socket or define a comprehensive one.
+// The socket library has Order type, let's use it but cast fetched data to it.
+import { Order } from "@/lib/socket";
 
 const statusColors: Record<string, string> = {
     NEW: "bg-blue-100 text-blue-700",
@@ -25,51 +37,78 @@ const statusLabels: Record<string, string> = {
 };
 
 export function OrdersPage() {
-    const [orders, setOrders] = useState<Order[]>([]);
+    const queryClient = useQueryClient();
     const [filter, setFilter] = useState("ALL");
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-    useEffect(() => {
-        loadOrders();
+    // Fetch Orders
+    const { data: ordersRaw } = useOrdersControllerFindAll(
+        {} as any, // Cast to any to bypass strict params requirement if 'phone' is optional in reality but required in generated types
+        { query: { refetchInterval: 30000 } }
+    );
 
-        socket.on("newOrder", (order: Order) => {
-            setOrders(prev => [order, ...prev]);
-            toast.info(`Yangi buyurtma: #${order.id}`);
+    const orders = ((ordersRaw?.data || []) as unknown) as Order[];
+
+    // Sort by ID desc
+    const sortedOrders = [...(orders || [])].sort((a, b) => b.id - a.id);
+
+    useEffect(() => {
+        socket.on("newOrder", (newOrder: Order) => {
+            toast.info(`Yangi buyurtma: #${newOrder.id}`);
+            queryClient.setQueryData(getOrdersControllerFindAllQueryKey(), (old: any) => {
+                const oldData = old?.data || [];
+                // Add new order to list
+                return {
+                    ...old,
+                    data: [newOrder, ...oldData]
+                };
+            });
+            // Or just invalidate to be safe
+            queryClient.invalidateQueries({ queryKey: getOrdersControllerFindAllQueryKey() });
         });
 
         socket.on("orderStatusChanged", (updatedOrder: Order) => {
-            setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+            queryClient.setQueryData(getOrdersControllerFindAllQueryKey(), (old: any) => {
+                const oldData = old?.data || [];
+                return {
+                    ...old,
+                    data: oldData.map((o: Order) => o.id === updatedOrder.id ? updatedOrder : o)
+                };
+            });
+            // Also update selected order if open
+            setSelectedOrder(prev => prev && prev.id === updatedOrder.id ? { ...prev, ...updatedOrder } : prev);
         });
 
         return () => {
             socket.off("newOrder");
             socket.off("orderStatusChanged");
         };
-    }, []);
+    }, [queryClient]);
 
-    const loadOrders = async () => {
-        try {
-            const res = await api.get("/orders");
-            const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
-            // Sort by most recent
-            setOrders(data.sort((a: Order, b: Order) => b.id - a.id));
-        } catch (error) {
-            console.error("Orders load failed", error);
-            toast.error("Buyurtmalarni yuklashda xatolik");
+    const updateStatusMutation = useOrdersControllerUpdate({
+        mutation: {
+            onSuccess: (_data, variables) => {
+                toast.success("Status o'zgartirildi");
+                // Cache update is handled by socket, but we can also optimize here
+                queryClient.invalidateQueries({ queryKey: getOrdersControllerFindAllQueryKey() });
+
+                // Update local state for immediate feedback in modal
+                if (selectedOrder && selectedOrder.id === Number(variables.id)) {
+                    // Note: Order.id is number, variables.id might be string depending on generated type. 
+                    // NestJS controller usually takes string param @Param('id').
+                    // Let's check generated signature: useOrdersControllerUpdate takes { id: string, data: UpdateOrderDto }
+                }
+            },
+            onError: () => toast.error("Xatolik")
         }
-    };
+    });
 
-    const updateStatus = async (id: number, status: string) => {
-        try {
-            await api.patch(`/orders/${id}`, { status });
-            toast.success("Status o'zgartirildi");
-            if (selectedOrder && selectedOrder.id === id) {
-                setSelectedOrder(prev => prev ? { ...prev, status } : null);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Xatolik");
+    const updateStatus = (id: number, status: string) => {
+        updateStatusMutation.mutate({ id: id.toString(), data: { status } });
+        // Optimistic UI update for modal
+        if (selectedOrder && selectedOrder.id === id) {
+            setSelectedOrder(prev => prev ? { ...prev, status: status as any } : null);
         }
     };
 
@@ -78,8 +117,8 @@ export function OrdersPage() {
     };
 
     const filteredOrders = filter === "ALL"
-        ? orders
-        : orders.filter(o => o.status === filter);
+        ? sortedOrders
+        : sortedOrders.filter(o => o.status === filter);
 
     return (
         <div className="p-8 h-full flex flex-col gap-6">

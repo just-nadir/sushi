@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Save, Store, Truck, Clock, Lock, Upload, CreditCard } from "lucide-react";
-import { api } from "@/lib/api";
+// import { api } from "@/lib/api"; // Removed manual api
+import {
+    useSettingsControllerFindAll,
+    useSettingsControllerFindTelegramUsers,
+    useSettingsControllerUpdate
+} from "@/lib/api/generated";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function SettingsPage() {
     const [restaurantInfo, setRestaurantInfo] = useState({
@@ -31,28 +37,26 @@ export function SettingsPage() {
         confirm: ""
     });
 
-    const [telegramUsers, setTelegramUsers] = useState<any[]>([]);
+    const queryClient = useQueryClient();
+
+    // Queries
+    const { data: settingsRaw } = useSettingsControllerFindAll();
+    const { data: telegramUsersRaw } = useSettingsControllerFindTelegramUsers();
+
+    const telegramUsers = (telegramUsersRaw?.data || []) as any[];
+    const settings = (settingsRaw?.data || []) as any[];
+
+    // Mutations
+    const updateMutation = useSettingsControllerUpdate({
+        mutation: {
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+            }
+        }
+    });
 
     useEffect(() => {
-        fetchSettings();
-        fetchTelegramUsers();
-    }, []);
-
-    const fetchTelegramUsers = async () => {
-        try {
-            const res = await api.get('/settings/telegram-users');
-            setTelegramUsers(res.data);
-        } catch (error) {
-            console.error("Failed to fetch telegram users", error);
-        }
-    };
-
-    const fetchSettings = async () => {
-        try {
-            const res = await api.get('/settings');
-            const settings = res.data;
-            // Map array of {key, value} to our state objects
-            // Map settings
+        if (settings.length > 0) {
             const paymentUpdates: any = {};
             const deliveryUpdates: any = {};
 
@@ -61,8 +65,6 @@ export function SettingsPage() {
                     paymentUpdates[s.key] = s.value;
                 }
                 if (['delivery_price', 'minOrder', 'avgTime'].includes(s.key)) {
-                    // map DB keys to state keys if different, but here they match mostly.
-                    // 'delivery_price' -> 'price'
                     if (s.key === 'delivery_price') deliveryUpdates.price = s.value;
                     else deliveryUpdates[s.key] = s.value;
                 }
@@ -74,22 +76,23 @@ export function SettingsPage() {
             if (Object.keys(deliveryUpdates).length > 0) {
                 setDeliveryInfo(prev => ({ ...prev, ...deliveryUpdates }));
             }
-        } catch (error) {
-            console.error("Failed to fetch settings", error);
         }
-    };
+    }, [settings]);
 
     const handleSave = async (section: string, _data?: any) => {
         try {
+            const promises = [];
             if (section === "To'lov") {
-                await api.patch('/settings/card_number', { value: paymentInfo.card_number });
-                await api.patch('/settings/admin_phone', { value: paymentInfo.admin_phone });
-                await api.patch('/settings/admin_chat_id', { value: paymentInfo.admin_chat_id });
+                promises.push(updateMutation.mutateAsync({ key: 'card_number', data: { value: paymentInfo.card_number } }));
+                promises.push(updateMutation.mutateAsync({ key: 'admin_phone', data: { value: paymentInfo.admin_phone } }));
+                promises.push(updateMutation.mutateAsync({ key: 'admin_chat_id', data: { value: paymentInfo.admin_chat_id } }));
             } else if (section === "Yetkazib berish") {
-                await api.patch('/settings/delivery_price', { value: deliveryInfo.price });
-                await api.patch('/settings/minOrder', { value: deliveryInfo.minOrder });
-                await api.patch('/settings/avgTime', { value: deliveryInfo.avgTime });
+                promises.push(updateMutation.mutateAsync({ key: 'delivery_price', data: { value: deliveryInfo.price } }));
+                promises.push(updateMutation.mutateAsync({ key: 'minOrder', data: { value: deliveryInfo.minOrder } }));
+                promises.push(updateMutation.mutateAsync({ key: 'avgTime', data: { value: deliveryInfo.avgTime } }));
             }
+
+            await Promise.all(promises);
             toast.success(`${section} muvaffaqiyatli saqlandi`);
         } catch (error) {
             toast.error("Saqlashda xatolik yuz berdi");
