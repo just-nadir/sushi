@@ -9,7 +9,8 @@ export function ReportsPage() {
     const queryClient = useQueryClient();
 
     const { data: ordersRaw } = useOrdersControllerFindAll({} as any);
-    const orders = ((ordersRaw?.data || []) as unknown) as Order[];
+    // ordersRaw.data is the body, which is { success: true, data: [...] }
+    const orders = (((ordersRaw?.data as any)?.data || []) as unknown) as Order[];
 
     useEffect(() => {
         // Socket Listeners

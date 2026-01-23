@@ -71,15 +71,17 @@ export class TelegramBotService implements OnModuleInit {
             });
         });
 
-        this.bot.launch().then(() => {
+        try {
+            await this.bot.launch();
             console.log('Telegram Bot started');
-        }).catch(err => {
-            console.error('Bot launch error:', err);
-        });
 
-        // Graceful stop
-        process.once('SIGINT', () => this.bot.stop('SIGINT'));
-        process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
+            // Graceful stop listener only if started
+            process.once('SIGINT', () => this.bot.stop('SIGINT'));
+            process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
+        } catch (err) {
+            console.warn('Telegram Bot failed to start (skipping for local dev):', err.message);
+            this.bot = null as any;
+        }
     }
 
     async sendOrderNotification(chatId: string, order: any) {

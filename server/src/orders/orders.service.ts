@@ -87,15 +87,25 @@ export class OrdersService {
     return order;
   }
 
-  findAll(phone?: string) {
-    return this.prisma.order.findMany({
-      where: phone ? { customerPhone: { contains: phone } } : {},
-      orderBy: { createdAt: 'desc' },
-      include: {
-        items: { include: { product: true } },
-        user: true
-      }
-    });
+  async findAll(phone?: string) {
+    const fs = require('fs');
+    fs.appendFileSync('debug.log', `OrdersService.findAll called with phone: ${phone}\n`);
+    try {
+      const orders = await this.prisma.order.findMany({
+        where: phone ? { customerPhone: { contains: phone } } : {},
+        orderBy: { createdAt: 'desc' },
+        include: {
+          items: { include: { product: true } },
+          user: true
+        }
+      });
+      fs.appendFileSync('debug.log', `OrdersService.findAll result count: ${orders.length}\n`);
+      return orders;
+    } catch (error) {
+      fs.appendFileSync('debug.log', `OrdersService.findAll PRISMA ERROR: ${error}\n`);
+      console.error("OrdersService.findAll PRISMA ERROR:", error);
+      throw error;
+    }
   }
 
   findOne(id: number) {

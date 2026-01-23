@@ -19,8 +19,8 @@ export function ProductsPage() {
     const { data: productsRaw, isLoading: pLoading } = useProductsControllerFindAll();
     const { data: categoriesRaw, isLoading: cLoading } = useCategoriesControllerFindAll();
 
-    const products = ((productsRaw?.data || []) as unknown) as Product[];
-    const categories = ((categoriesRaw?.data || []) as unknown) as Category[];
+    const products = (((productsRaw?.data as any)?.data || []) as unknown) as Product[];
+    const categories = (((categoriesRaw?.data as any)?.data || []) as unknown) as Category[];
     const isLoading = pLoading || cLoading;
 
     // Filter State

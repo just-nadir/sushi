@@ -14,7 +14,6 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto);
   }
 
-  // @UseGuards(AuthGuard('jwt')) // Uncomment to protect
   @Get()
   findAll(@Query('phone') phone?: string) {
     return this.ordersService.findAll(phone);

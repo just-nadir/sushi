@@ -48,7 +48,7 @@ export function OrdersPage() {
         { query: { refetchInterval: 30000 } }
     );
 
-    const orders = ((ordersRaw?.data || []) as unknown) as Order[];
+    const orders = (((ordersRaw?.data as any)?.data || []) as unknown) as Order[];
 
     // Sort by ID desc
     const sortedOrders = [...(orders || [])].sort((a, b) => b.id - a.id);

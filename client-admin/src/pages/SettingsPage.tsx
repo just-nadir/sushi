@@ -43,8 +43,8 @@ export function SettingsPage() {
     const { data: settingsRaw } = useSettingsControllerFindAll();
     const { data: telegramUsersRaw } = useSettingsControllerFindTelegramUsers();
 
-    const telegramUsers = (telegramUsersRaw?.data || []) as any[];
-    const settings = (settingsRaw?.data || []) as any[];
+    const telegramUsers = (((telegramUsersRaw?.data as any)?.data || []) as any[]);
+    const settings = (((settingsRaw?.data as any)?.data || []) as any[]);
 
     // Mutations
     const updateMutation = useSettingsControllerUpdate({
