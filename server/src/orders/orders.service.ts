@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,6 +15,58 @@ export class OrdersService {
   ) { }
 
   async create(createOrderDto: CreateOrderDto) {
+    // 0. Validate Store Status
+    const settings = await this.prisma.setting.findMany({
+      where: {
+        key: { in: ['work_start', 'work_end', 'break_start', 'break_end', 'store_mode'] }
+      }
+    });
+
+    const config = settings.reduce((acc, curr) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const mode = config['store_mode'] || 'AUTO';
+
+    if (mode === 'CLOSED') {
+      throw new BadRequestException("Uzr, do'kon vaqtinchalik yopiq.");
+    }
+
+    if (mode !== 'OPEN') { // Check AUTO logic
+      const now = new Date();
+      const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+      const workStart = config['work_start'] || "09:00";
+      const workEnd = config['work_end'] || "23:59";
+      const breakStart = config['break_start'] || "20:00";
+      const breakEnd = config['break_end'] || "22:00";
+
+      // Check working hours
+      let isWorkingHours = false;
+      if (workEnd < workStart) {
+        isWorkingHours = currentTime >= workStart || currentTime <= workEnd;
+      } else {
+        isWorkingHours = currentTime >= workStart && currentTime <= workEnd;
+      }
+
+      if (!isWorkingHours) {
+        throw new BadRequestException(`Uzr, ish vaqti tugadi (${workStart}-${workEnd}).`);
+      }
+
+      // Check break time
+      let isBreakTime = false;
+      if (breakEnd < breakStart) {
+        isBreakTime = currentTime >= breakStart || currentTime <= breakEnd;
+      } else {
+        isBreakTime = currentTime >= breakStart && currentTime <= breakEnd;
+      }
+
+      if (isBreakTime) {
+        throw new BadRequestException(`Uzr, hozir tanaffus (${breakStart}-${breakEnd}).`);
+      }
+    }
+
     // 1. Calculate Total Amount
     let totalAmount = 0;
     const orderItemsData = [];
@@ -78,7 +130,10 @@ export class OrdersService {
     try {
       const adminSetting = await this.prisma.setting.findUnique({ where: { key: 'admin_chat_id' } });
       if (adminSetting?.value) {
-        await this.telegramBotService.sendOrderNotification(adminSetting.value, order);
+        const chatIds = adminSetting.value.split(',').map(id => id.trim()).filter(Boolean);
+        await Promise.all(chatIds.map(chatId =>
+          this.telegramBotService.sendOrderNotification(chatId, order)
+        ));
       }
     } catch (e) {
       console.error("Failed to notify telegram", e);

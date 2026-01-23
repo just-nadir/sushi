@@ -10,6 +10,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { ProfilePage } from '@/pages/ProfilePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { Toaster } from 'sonner';
+import { StoreStatusBlocker } from '@/components/StoreStatusBlocker';
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ function App() {
           </Routes>
         </Router>
         <Toaster position="top-center" />
+        <StoreStatusBlocker />
       </AuthProvider>
     </QueryClientProvider>
   );

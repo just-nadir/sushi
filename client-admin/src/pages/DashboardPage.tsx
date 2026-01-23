@@ -179,6 +179,35 @@ export function DashboardPage() {
         }
     };
 
+    // Store Status Logic
+    const [storeMode, setStoreMode] = useState<string>('AUTO');
+    const [statusMessage, setStatusMessage] = useState<string>('');
+
+    useEffect(() => {
+        // Fetch initial status
+        api.get('/store/status').then(res => {
+            const data = res.data;
+            setStoreMode(data.mode);
+            setStatusMessage(data.message);
+        });
+    }, []);
+
+    const handleModeChange = async (mode: string) => {
+        try {
+            await api.patch('/settings/store_mode', { value: mode });
+            setStoreMode(mode);
+
+            // Refetch status to get updated message
+            const res = await api.get('/store/status');
+            setStatusMessage(res.data.message);
+
+            toast.success(`Holat o'zgartirildi: ${mode}`);
+        } catch (error) {
+            toast.error("Xatolik yuz berdi");
+        }
+    };
+
+
     // const activeOrders = orders.filter(o => !['COMPLETED', 'CANCELLED'].includes(o.status));
     // const completedOrders = orders.filter(o => ['COMPLETED', 'CANCELLED'].includes(o.status));
 
@@ -187,6 +216,38 @@ export function DashboardPage() {
 
 
             {/* Kanban Board / Grid */}
+
+            {/* Kanban Board / Grid */}
+
+            {/* Store Status Toggle */}
+            <div className="bg-white border-b px-8 py-4 flex items-center justify-between mb-4">
+                <div>
+                    <h2 className="text-lg font-bold text-gray-900">Do'kon Holati</h2>
+                    <p className={`text-sm font-medium ${statusMessage.includes("yopiq") ? "text-red-600" : "text-green-600"}`}>
+                        {statusMessage}
+                    </p>
+                </div>
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                    <button
+                        onClick={() => handleModeChange('AUTO')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${storeMode === 'AUTO' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                    >
+                        Avto
+                    </button>
+                    <button
+                        onClick={() => handleModeChange('OPEN')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${storeMode === 'OPEN' ? 'bg-green-500 shadow-sm text-white' : 'text-gray-500 hover:text-green-600'}`}
+                    >
+                        Ochiq
+                    </button>
+                    <button
+                        onClick={() => handleModeChange('CLOSED')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${storeMode === 'CLOSED' ? 'bg-red-500 shadow-sm text-white' : 'text-gray-500 hover:text-red-600'}`}
+                    >
+                        Yopiq
+                    </button>
+                </div>
+            </div>
 
             {/* Kanban Board / Grid */}
             <div className="flex-1 overflow-x-auto overflow-y-hidden pt-2">

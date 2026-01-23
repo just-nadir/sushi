@@ -74,6 +74,24 @@ async function main() {
         }
     }
     console.log('Sample data seeded successfully.');
+    // Settings
+    console.log('Seeding settings...');
+    const settings = [
+        { key: 'work_start', value: '09:00', description: 'Ish vaqti boshlanishi' },
+        { key: 'work_end', value: '23:59', description: 'Ish vaqti tugashi' },
+        { key: 'break_start', value: '20:00', description: 'Tanaffus boshlanishi' },
+        { key: 'break_end', value: '22:00', description: 'Tanaffus tugashi' },
+        { key: 'store_mode', value: 'AUTO', description: 'Do\'kon holati (AUTO/OPEN/CLOSED)' },
+    ];
+
+    for (const s of settings) {
+        await prisma.setting.upsert({
+            where: { key: s.key },
+            update: {},
+            create: s
+        });
+    }
+    console.log('Settings seeded successfully.');
 }
 
 main()

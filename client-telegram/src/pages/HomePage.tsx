@@ -35,7 +35,8 @@ export function HomePage() {
         const matchesCategory = activeCategory ? p.categoryId === activeCategory : true;
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
+        const isAvailable = p.isAvailable !== false; // Handle undefined as true just in case, or strict check if guaranteed
+        return matchesCategory && matchesSearch && isAvailable;
     }), [products, activeCategory, searchQuery]);
 
     const handleAddToCart = (product: Product) => {

@@ -80,6 +80,15 @@ export function CheckoutPage() {
 
         setIsSubmitting(true);
         try {
+            // 0. Check Store Status (Safe-guard)
+            const statusRes = await api.get('/store/status');
+            if (!statusRes.data.isOpen) {
+                alert(`Uzr! ${statusRes.data.message}`);
+                // Refresh page to show blocker
+                window.location.reload();
+                return;
+            }
+
             // Parse location if exists
             let locationLat = undefined;
             let locationLon = undefined;

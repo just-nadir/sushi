@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { Save, Store, Truck, Clock, Lock, Upload, CreditCard } from "lucide-react";
+import { Save, Store, Truck, Clock, Lock, CreditCard } from "lucide-react";
 import {
     useSettingsControllerFindAll,
-    useSettingsControllerFindTelegramUsers,
+
     useSettingsControllerUpdate
 } from "@/lib/api/generated";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,11 @@ interface SettingsState {
     card_number: string;
     admin_phone: string;
     admin_chat_id: string;
+    // Hours
+    work_start: string;
+    work_end: string;
+    break_start: string;
+    break_end: string;
     // Delivery
     delivery_price: string;
     minOrder: string;
@@ -39,20 +44,18 @@ export function SettingsPage() {
         admin_chat_id: "",
         delivery_price: "",
         minOrder: "",
-        avgTime: ""
+        avgTime: "",
+        work_start: "",
+        work_end: "",
+        break_start: "",
+        break_end: ""
     });
 
-    const [passwordData, setPasswordData] = useState({
-        current: "",
-        new: "",
-        confirm: ""
-    });
+
 
     // Queries
     const { data: settingsRaw, isLoading } = useSettingsControllerFindAll();
-    const { data: telegramUsersRaw } = useSettingsControllerFindTelegramUsers();
 
-    const telegramUsers = (((telegramUsersRaw?.data as any)?.data || []) as any[]);
     const settings = (((settingsRaw?.data as any)?.data || []) as any[]);
 
     // Mutation
@@ -85,6 +88,12 @@ export function SettingsPage() {
                 promises.push(updateMutation.mutateAsync({ key: 'phone', data: { value: formData.phone } }));
                 promises.push(updateMutation.mutateAsync({ key: 'address', data: { value: formData.address } }));
                 promises.push(updateMutation.mutateAsync({ key: 'description', data: { value: formData.description } }));
+            }
+            else if (section === "Soatlar") {
+                promises.push(updateMutation.mutateAsync({ key: 'work_start', data: { value: formData.work_start } }));
+                promises.push(updateMutation.mutateAsync({ key: 'work_end', data: { value: formData.work_end } }));
+                promises.push(updateMutation.mutateAsync({ key: 'break_start', data: { value: formData.break_start } }));
+                promises.push(updateMutation.mutateAsync({ key: 'break_end', data: { value: formData.break_end } }));
             }
             else if (section === "To'lov") {
                 promises.push(updateMutation.mutateAsync({ key: 'card_number', data: { value: formData.card_number } }));
@@ -121,61 +130,83 @@ export function SettingsPage() {
                     </div>
                 </div>
                 <div className="p-6 space-y-6">
-                    <div className="flex items-start gap-8">
-                        {/* Logo Upload Placeholder - Functional logic can be added later if needed */}
-                        <div className="shrink-0 flex flex-col gap-3 items-center">
-                            <div className="h-32 w-32 rounded-2xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center relative group cursor-pointer overflow-hidden">
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-primary transition-colors">
-                                    <Upload className="h-8 w-8 mb-1" />
-                                    <span className="text-xs font-medium">Yuklash</span>
-                                </div>
-                            </div>
-                            <span className="text-xs text-gray-500">2MB gacha, PNG/JPG</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Restoran Nomi</label>
+                            <input
+                                className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                value={formData.name}
+                                onChange={e => handleChange('name', e.target.value)}
+                                placeholder="Restoran nomi"
+                            />
                         </div>
-
-                        {/* Fields */}
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Restoran Nomi</label>
-                                <input
-                                    className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                    value={formData.name}
-                                    onChange={e => handleChange('name', e.target.value)}
-                                    placeholder="Restoran nomi"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Telefon Raqam</label>
-                                <input
-                                    className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                    value={formData.phone}
-                                    onChange={e => handleChange('phone', e.target.value)}
-                                    placeholder="+998..."
-                                />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                                <label className="text-sm font-medium text-gray-700">Manzil</label>
-                                <textarea
-                                    className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px]"
-                                    value={formData.address}
-                                    onChange={e => handleChange('address', e.target.value)}
-                                    placeholder="Manzilni kiriting"
-                                />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                                <label className="text-sm font-medium text-gray-700">Izoh (Mijozlar uchun)</label>
-                                <textarea
-                                    className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[60px]"
-                                    value={formData.description}
-                                    onChange={e => handleChange('description', e.target.value)}
-                                    placeholder="Qisqacha ta'rif"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Telefon Raqam</label>
+                            <input
+                                className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                value={formData.phone}
+                                onChange={e => handleChange('phone', e.target.value)}
+                                placeholder="+998..."
+                            />
                         </div>
                     </div>
 
                     <div className="flex justify-end pt-4 border-t">
                         <Button onClick={() => handleSave("Restoran")} className="gap-2">
+                            <Save className="h-4 w-4" /> Saqlash
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Store Hours Settings */}
+            <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-gray-500" />
+                        <h2 className="text-lg font-semibold text-gray-900">Ish Vaqtlari</h2>
+                    </div>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Ish Boshlanishi</label>
+                        <input
+                            type="time"
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            value={formData.work_start}
+                            onChange={e => handleChange('work_start', e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Ish Tugashi</label>
+                        <input
+                            type="time"
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            value={formData.work_end}
+                            onChange={e => handleChange('work_end', e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Tanaffus Boshlanishi (Sport)</label>
+                        <input
+                            type="time"
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            value={formData.break_start}
+                            onChange={e => handleChange('break_start', e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Tanaffus Tugashi</label>
+                        <input
+                            type="time"
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            value={formData.break_end}
+                            onChange={e => handleChange('break_end', e.target.value)}
+                        />
+                    </div>
+
+                    <div className="md:col-span-2 flex justify-end pt-4 border-t mt-2">
+                        <Button onClick={() => handleSave("Soatlar")} className="gap-2">
                             <Save className="h-4 w-4" /> Saqlash
                         </Button>
                     </div>
@@ -211,25 +242,19 @@ export function SettingsPage() {
                     </div>
                     <div className="md:col-span-2 space-y-2 pt-2 border-t">
                         <label className="text-sm font-medium text-gray-700 flex justify-between">
-                            <span>Telegram ID (Buyurtma xabarlarini olish uchun)</span>
-                            <span className="text-xs text-blue-600 cursor-pointer" onClick={() => toast.info("Ro'yxatda ismingiz chiqmasa, Botga /start bosing")}>
-                                Ismingiz chiqmayaptimi?
+                            <span>Telegram ID(lar)</span>
+                            <span className="text-xs text-blue-600 cursor-pointer" onClick={() => window.open(`https://t.me/userinfobot`, '_blank')}>
+                                ID ni qanday bilish mumkin?
                             </span>
                         </label>
-                        <select
-                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-white"
+                        <input
+                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                             value={formData.admin_chat_id}
                             onChange={e => handleChange('admin_chat_id', e.target.value)}
-                        >
-                            <option value="">-- Tanlang --</option>
-                            {telegramUsers.map((user: any) => (
-                                <option key={user.telegramId} value={user.telegramId}>
-                                    {user.fullName} ({user.phone})
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Masalan: 12345678, 87654321"
+                        />
                         <p className="text-xs text-gray-500">
-                            Botga ulangan foydalanuvchilar ro'yxati.
+                            Buyurtma xabari boradigan adminlar ID lari. Bir nechta bo'lsa vergul bilan ajrating.
                         </p>
                     </div>
                     <div className="md:col-span-2 flex justify-end pt-4 border-t mt-2">

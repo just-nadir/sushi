@@ -95,20 +95,7 @@ export function ReportsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Hisobotlar</h1>
                     <p className="text-muted-foreground">Sotuvlar va statistika</p>
                 </div>
-                <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,"
-                            + "ID,Sana,Status,Jami Summa,Mijoz\n"
-                            + orders.map(o => `${o.id},${o.createdAt},${o.status},${o.totalAmount},${o.customerName || ''}`).join("\n");
-                        const encodedUri = encodeURI(csvContent);
-                        const link = document.createElement("a");
-                        link.setAttribute("href", encodedUri);
-                        link.setAttribute("download", "buyurtmalar.csv");
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }}>Export CSV</Button>
-                </div>
+                {/* Actions Removed */}
             </div>
 
             {/* Summary Cards */}

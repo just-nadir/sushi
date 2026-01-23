@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { Plus, Search, Upload, Trash2, Pencil, Filter, X } from "lucide-react";
-import { Product, Category, uploadFile } from "@/lib/api";
+import { Plus, Search, Upload, Trash2, Pencil, Filter, X, GripVertical, Eye, EyeOff } from "lucide-react";
+import { Product, Category, uploadFile, api } from "@/lib/api";
 import { toast } from "sonner";
 import {
     useProductsControllerFindAll,
@@ -10,7 +10,8 @@ import {
     useProductsControllerRemove,
     useCategoriesControllerFindAll
 } from "@/lib/api/generated";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { Reorder, useDragControls } from "framer-motion";
 
 export function ProductsPage() {
     const queryClient = useQueryClient();
@@ -22,6 +23,15 @@ export function ProductsPage() {
     const products = (((productsRaw?.data as any)?.data || []) as unknown) as Product[];
     const categories = (((categoriesRaw?.data as any)?.data || []) as unknown) as Category[];
     const isLoading = pLoading || cLoading;
+
+    // Local State for DnD
+    const [localProducts, setLocalProducts] = useState<Product[]>([]);
+
+    useEffect(() => {
+        if (products.length > 0) {
+            setLocalProducts(products);
+        }
+    }, [products]);
 
     // Filter State
     const [searchQuery, setSearchQuery] = useState("");
@@ -41,7 +51,26 @@ export function ProductsPage() {
         image: ""
     });
 
-    // Mutations
+    // Reorder Mutation
+    const reorderMutation = useMutation({
+        mutationFn: async (newOrder: Product[]) => {
+            // Optimistic update - in real app, might want to send only changed IDs
+            // Sending index as sortOrder
+            const updates = newOrder.map((prod, index) =>
+                api.patch(`/products/${prod.id}`, { sortOrder: index })
+            );
+            await Promise.all(updates);
+        },
+        onSuccess: () => {
+            // Invalidate silently or just toast
+            // queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+        },
+        onError: () => {
+            toast.error("Tartibni saqlashda xatolik");
+        }
+    });
+
+    // CRUD Mutations
     const createMutation = useProductsControllerCreate({
         mutation: {
             onSuccess: () => {
@@ -101,6 +130,9 @@ export function ProductsPage() {
         if (editingId) {
             updateMutation.mutate({ id: editingId, data: payload });
         } else {
+            // For new product, backend should handle sortOrder (add to end) logic if implemented,
+            // or it defaults to 0 and we might need to resort.
+            // For now rely on backend default or basic logic.
             createMutation.mutate({ data: payload });
         }
     };
@@ -128,8 +160,26 @@ export function ProductsPage() {
         setFormData({ name: "", description: "", price: "", categoryId: "", image: "" });
     };
 
+    const handleReorder = (newOrder: Product[]) => {
+        setLocalProducts(newOrder);
+    };
+
+    const handleDragEnd = () => {
+        // Only save if filter is NOT active (to avoid messing up global order with partial list)
+        if (searchQuery === "" && selectedCategory === "all") {
+            reorderMutation.mutate(localProducts);
+            toast.success("Tartib saqlandi");
+        }
+    };
+
     // Filtering Logic
-    const filteredProducts = products.filter(product => {
+    // We shouldn't filter `products` (backend data), but `localProducts` (UI state)
+    // BUT `Reorder` needs the full list to govern order.
+    // Complexity: If we filter, we can't really reorder the hidden items relative to shown ones easily.
+    // Solution: Disable Reorder when filtered.
+    const isFiltered = searchQuery !== "" || selectedCategory !== "all";
+
+    const filteredProducts = localProducts.filter(product => {
         const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory === "all" || product.categoryId === selectedCategory;
         return matchesSearch && matchesCategory;
@@ -141,7 +191,7 @@ export function ProductsPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900">Mahsulotlar</h1>
-                    <p className="text-muted-foreground">Menyu taomlari va ichimliklarni boshqarish</p>
+                    <p className="text-muted-foreground">Tortib surish (Drag & Drop) orqali tartiblang</p>
                 </div>
                 <Button onClick={() => setIsModalOpen(true)} className="shadow-lg shadow-primary/25">
                     <Plus className="mr-2 h-4 w-4" /> Yangi Mahsulot
@@ -175,91 +225,61 @@ export function ProductsPage() {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden flex-1 flex flex-col">
-                <div className="overflow-auto flex-1">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50/50 border-b sticky top-0 z-10 backdrop-blur-sm">
-                            <tr>
-                                <th className="px-6 py-4 font-semibold text-gray-500 w-20">Rasm</th>
-                                <th className="px-6 py-4 font-semibold text-gray-500">Nomi</th>
-                                <th className="px-6 py-4 font-semibold text-gray-500">Kategoriya</th>
-                                <th className="px-6 py-4 font-semibold text-gray-500">Narxi</th>
-                                <th className="px-6 py-4 font-semibold text-gray-500 text-right">Amallar</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {isLoading ? (
-                                // Setup skeleton or loading text here
-                                <tr>
-                                    <td colSpan={5} className="text-center py-10 text-muted-foreground">Yuklanmoqda...</td>
-                                </tr>
-                            ) : filteredProducts.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="text-center py-20">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center">
-                                                <Search className="h-6 w-6 text-gray-400" />
-                                            </div>
-                                            <p className="font-medium text-gray-900">Mahsulotlar topilmadi</p>
-                                            <p className="text-sm text-gray-500">Qidiruv so'zini o'zgartirib ko'ring yoki yangi mahsulot qo'shing.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredProducts.map((product) => {
-                                    const categoryName = categories.find(c => c.id === product.categoryId)?.name || "Noma'lum";
-                                    return (
-                                        <tr key={product.id} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-3">
-                                                <div className="h-12 w-12 rounded-lg bg-gray-100 border overflow-hidden">
-                                                    <img
-                                                        src={product.image || "https://placehold.co/100"}
-                                                        alt={product.name}
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-3">
-                                                <p className="font-medium text-gray-900">{product.name}</p>
-                                                <p className="text-xs text-gray-500 line-clamp-1 max-w-[200px]">{product.description}</p>
-                                            </td>
-                                            <td className="px-6 py-3">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                                                    {categoryName}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-3 font-medium text-gray-900">
-                                                {product.price.toLocaleString()} so'm
-                                            </td>
-                                            <td className="px-6 py-3 text-right">
-                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => openEditModal(product)}
-                                                        className="h-8 w-8 rounded-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(product.id)}
-                                                        className="h-8 w-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                {/* Pagination (Simple footer count) */}
-                <div className="border-t p-4 text-xs text-gray-500 flex justify-between">
-                    <span>Jami: {filteredProducts.length} mahsulot</span>
-                    <span>Ko'rsatilmoqda: {filteredProducts.length}</span>
-                </div>
+            {/* List Header (Fake Table Header) */}
+            <div className="bg-gray-50/80 rounded-lg border border-gray-100 px-6 py-3 grid grid-cols-[40px_60px_2fr_1fr_1fr_100px] gap-4 text-sm font-semibold text-gray-500">
+                <div className="text-center">#</div>
+                <div>Rasm</div>
+                <div>Nomi</div>
+                <div>Kategoriya</div>
+                <div>Narxi</div>
+                <div className="text-right">Amallar</div>
+            </div>
+
+            {/* List / Reorder Group */}
+            <div className="flex-1 bg-white rounded-xl border shadow-sm p-2 overflow-y-auto">
+                {isLoading ? (
+                    <div className="text-center py-20 text-muted-foreground">Yuklanmoqda...</div>
+                ) : filteredProducts.length === 0 ? (
+                    <div className="text-center py-20 text-muted-foreground">Mahsulotlar topilmadi</div>
+                ) : (
+                    <Reorder.Group
+                        as="div"
+                        axis="y"
+                        values={filteredProducts} // Note: This might be weird if filtered. Reorder expects full list usually?
+                        // Actually Reorder works on the list passed. But if we pass a filtered list, we are reordering "indices of the filtered list".
+                        // Logic: If filtered, do NOT update `localProducts` via `onReorder`, or it deletes hidden items!
+                        // FIX: Only allow reorder when NOT filtered.
+                        onReorder={!isFiltered ? handleReorder : () => { }}
+                        className="flex flex-col gap-2"
+                    >
+                        {filteredProducts.map((product) => {
+                            const categoryName = categories.find(c => c.id === product.categoryId)?.name || "Noma'lum";
+                            return (
+                                <ProductItem
+                                    key={product.id}
+                                    product={product}
+                                    categoryName={categoryName}
+                                    isDragDisabled={isFiltered}
+                                    onDragEnd={handleDragEnd}
+                                    onEdit={() => openEditModal(product)}
+                                    onDelete={() => handleDelete(product.id)}
+                                    onToggle={async () => {
+                                        await updateMutation.mutateAsync({
+                                            id: product.id,
+                                            data: { isAvailable: !product.isAvailable }
+                                        });
+                                    }}
+                                />
+                            );
+                        })}
+                    </Reorder.Group>
+                )}
+            </div>
+
+            {/* Pagination (Simple footer count) */}
+            <div className="bg-white border-t rounded-b-xl p-4 text-xs text-gray-500 flex justify-between">
+                <span>Jami: {filteredProducts.length} mahsulot</span>
+                {isFiltered && <span className="text-orange-600 font-medium">Filtrlangan holatda tartiblash o'chirilgan</span>}
             </div>
 
             {/* Create/Edit Modal */}
@@ -369,5 +389,106 @@ export function ProductsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+function ProductItem({
+    product, categoryName, isDragDisabled, onDragEnd, onEdit, onDelete, onToggle
+}: {
+    product: Product, categoryName: string, isDragDisabled: boolean, onDragEnd: () => void, onEdit: () => void, onDelete: () => void, onToggle: () => Promise<void>
+}) {
+    const controls = useDragControls();
+
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleToggle = async () => {
+        setIsLoading(true);
+        try {
+            await onToggle();
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Reorder.Item
+            value={product}
+            dragListener={!isDragDisabled}
+            dragControls={controls}
+            onDragEnd={onDragEnd}
+            className={`
+                grid grid-cols-[40px_60px_2fr_1fr_1fr_100px] gap-4 items-center px-4 py-3 bg-white border rounded-lg select-none transition-shadow
+                ${isDragDisabled ? 'opacity-80' : 'hover:border-primary/50 hover:shadow-md'}
+                ${!product.isAvailable ? 'opacity-60 bg-gray-50' : ''}
+            `}
+            whileDrag={{ zIndex: 999, boxShadow: "0px 10px 30px rgba(0,0,0,0.15)", scale: 1.02 }}
+        >
+            <div
+                className={`flex justify-center p-2 rounded-md ${isDragDisabled ? 'cursor-not-allowed opacity-30' : 'cursor-grab active:cursor-grabbing hover:bg-gray-50 text-gray-400'}`}
+                onPointerDown={(e) => !isDragDisabled && controls.start(e)}
+            >
+                <GripVertical className="h-5 w-5" />
+            </div>
+
+            <div className="h-10 w-10 rounded-lg bg-gray-100 border overflow-hidden relative">
+                <img
+                    src={product.image || "https://placehold.co/100"}
+                    alt={product.name}
+                    className={`h-full w-full object-cover ${!product.isAvailable ? 'grayscale' : ''}`}
+                />
+            </div>
+
+            <div>
+                <p className="font-medium text-gray-900 line-clamp-1 flex items-center gap-2">
+                    {product.name}
+                    {!product.isAvailable && (
+                        <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded border">Faol emas</span>
+                    )}
+                </p>
+                <p className="text-xs text-gray-500 line-clamp-1">{product.description}</p>
+            </div>
+
+            <div>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    {categoryName}
+                </span>
+            </div>
+
+            <div className="font-medium text-gray-900">
+                {product.price.toLocaleString()}
+            </div>
+
+            <div className="flex justify-end gap-2">
+                <button
+                    onClick={handleToggle}
+                    disabled={isLoading}
+                    title={product.isAvailable ? "Faolsizlantirish" : "Faollashtirish"}
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${product.isAvailable
+                        ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
+                        }`}
+                >
+                    {isLoading ? (
+                        <div className="h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                    ) : (
+                        product.isAvailable ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />
+                    )}
+                </button>
+                <button
+                    onClick={onEdit}
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
+                >
+                    <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                    onClick={onDelete}
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+                >
+                    <Trash2 className="h-4 w-4" />
+                </button>
+            </div>
+
+        </Reorder.Item>
     );
 }
