@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -23,6 +25,10 @@ import { SettingsModule } from './settings/settings.module';
       rootPath: join(__dirname, '..', '..', '..', 'client-telegram', 'dist'),
       exclude: ['/api/(.*)'],
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 20,
+    }]),
     PrismaModule,
     CategoriesModule,
     ProductsModule,
@@ -33,6 +39,13 @@ import { SettingsModule } from './settings/settings.module';
     SettingsModule
   ],
   controllers: [AppController],
-  providers: [AppService, OrdersGateway],
+  providers: [
+    AppService,
+    OrdersGateway,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule { }
