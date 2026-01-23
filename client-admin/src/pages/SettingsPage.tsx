@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Save, Store, Truck, Clock, Lock, Upload, CreditCard } from "lucide-react";
-// import { api } from "@/lib/api"; // Removed manual api
 import {
     useSettingsControllerFindAll,
     useSettingsControllerFindTelegramUsers,
@@ -10,25 +9,37 @@ import {
 } from "@/lib/api/generated";
 import { useQueryClient } from "@tanstack/react-query";
 
+interface SettingsState {
+    // Restaurant
+    name: string;
+    phone: string;
+    address: string;
+    description: string;
+    // Payment
+    card_number: string;
+    admin_phone: string;
+    admin_chat_id: string;
+    // Delivery
+    delivery_price: string;
+    minOrder: string;
+    avgTime: string;
+}
+
 export function SettingsPage() {
-    const [restaurantInfo, setRestaurantInfo] = useState({
-        name: "Sushi Master",
-        phone: "+998 90 123 45 67",
-        address: "Toshkent sh, Chilonzor 1-kvartal",
-        description: "Eng mazali sushi va rollar yetkazib berish xizmati"
-    });
+    const queryClient = useQueryClient();
 
-    const [deliveryInfo, setDeliveryInfo] = useState({
-        price: "15000",
-        minOrder: "50000",
-        freeDeliveryFrom: "200000",
-        avgTime: "45-60"
-    });
-
-    const [paymentInfo, setPaymentInfo] = useState({
-        card_number: "8600 1234 5678 9012",
-        admin_phone: "+998 90 123 45 67",
-        admin_chat_id: ""
+    // Initial state directly from what we expect (empty strings, not mocks)
+    const [formData, setFormData] = useState<SettingsState>({
+        name: "",
+        phone: "",
+        address: "",
+        description: "",
+        card_number: "",
+        admin_phone: "",
+        admin_chat_id: "",
+        delivery_price: "",
+        minOrder: "",
+        avgTime: ""
     });
 
     const [passwordData, setPasswordData] = useState({
@@ -37,67 +48,65 @@ export function SettingsPage() {
         confirm: ""
     });
 
-    const queryClient = useQueryClient();
-
     // Queries
-    const { data: settingsRaw } = useSettingsControllerFindAll();
+    const { data: settingsRaw, isLoading } = useSettingsControllerFindAll();
     const { data: telegramUsersRaw } = useSettingsControllerFindTelegramUsers();
 
     const telegramUsers = (((telegramUsersRaw?.data as any)?.data || []) as any[]);
     const settings = (((settingsRaw?.data as any)?.data || []) as any[]);
 
-    // Mutations
-    const updateMutation = useSettingsControllerUpdate({
-        mutation: {
-            onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
-            }
-        }
-    });
+    // Mutation
+    const updateMutation = useSettingsControllerUpdate();
 
+    // Load settings into state
     useEffect(() => {
         if (settings.length > 0) {
-            const paymentUpdates: any = {};
-            const deliveryUpdates: any = {};
-
+            const nextData = { ...formData };
             settings.forEach((s: any) => {
-                if (['card_number', 'admin_phone', 'admin_chat_id'].includes(s.key)) {
-                    paymentUpdates[s.key] = s.value;
-                }
-                if (['delivery_price', 'minOrder', 'avgTime'].includes(s.key)) {
-                    if (s.key === 'delivery_price') deliveryUpdates.price = s.value;
-                    else deliveryUpdates[s.key] = s.value;
+                if (Object.prototype.hasOwnProperty.call(nextData, s.key)) {
+                    // @ts-ignore
+                    nextData[s.key] = s.value;
                 }
             });
-
-            if (Object.keys(paymentUpdates).length > 0) {
-                setPaymentInfo(prev => ({ ...prev, ...paymentUpdates }));
-            }
-            if (Object.keys(deliveryUpdates).length > 0) {
-                setDeliveryInfo(prev => ({ ...prev, ...deliveryUpdates }));
-            }
+            setFormData(nextData);
         }
-    }, [settings]);
+    }, [settings]); // Only re-run if settings array changes reference (fetched)
 
-    const handleSave = async (section: string, _data?: any) => {
+    const handleChange = (field: keyof SettingsState, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSave = async (section: string) => {
         try {
             const promises = [];
-            if (section === "To'lov") {
-                promises.push(updateMutation.mutateAsync({ key: 'card_number', data: { value: paymentInfo.card_number } }));
-                promises.push(updateMutation.mutateAsync({ key: 'admin_phone', data: { value: paymentInfo.admin_phone } }));
-                promises.push(updateMutation.mutateAsync({ key: 'admin_chat_id', data: { value: paymentInfo.admin_chat_id } }));
-            } else if (section === "Yetkazib berish") {
-                promises.push(updateMutation.mutateAsync({ key: 'delivery_price', data: { value: deliveryInfo.price } }));
-                promises.push(updateMutation.mutateAsync({ key: 'minOrder', data: { value: deliveryInfo.minOrder } }));
-                promises.push(updateMutation.mutateAsync({ key: 'avgTime', data: { value: deliveryInfo.avgTime } }));
+
+            if (section === "Restoran") {
+                promises.push(updateMutation.mutateAsync({ key: 'name', data: { value: formData.name } }));
+                promises.push(updateMutation.mutateAsync({ key: 'phone', data: { value: formData.phone } }));
+                promises.push(updateMutation.mutateAsync({ key: 'address', data: { value: formData.address } }));
+                promises.push(updateMutation.mutateAsync({ key: 'description', data: { value: formData.description } }));
+            }
+            else if (section === "To'lov") {
+                promises.push(updateMutation.mutateAsync({ key: 'card_number', data: { value: formData.card_number } }));
+                promises.push(updateMutation.mutateAsync({ key: 'admin_phone', data: { value: formData.admin_phone } }));
+                promises.push(updateMutation.mutateAsync({ key: 'admin_chat_id', data: { value: formData.admin_chat_id } }));
+            }
+            else if (section === "Yetkazib berish") {
+                promises.push(updateMutation.mutateAsync({ key: 'delivery_price', data: { value: formData.delivery_price } }));
+                promises.push(updateMutation.mutateAsync({ key: 'minOrder', data: { value: formData.minOrder } }));
+                promises.push(updateMutation.mutateAsync({ key: 'avgTime', data: { value: formData.avgTime } }));
             }
 
             await Promise.all(promises);
-            toast.success(`${section} muvaffaqiyatli saqlandi`);
+            await queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+            toast.success("O'zgarishlar saqlandi");
         } catch (error) {
-            toast.error("Saqlashda xatolik yuz berdi");
+            console.error(error);
+            toast.error("Saqlashda xatolik");
         }
     };
+
+    if (isLoading) return <div className="p-8">Yuklanmoqda...</div>;
 
     return (
         <div className="p-8 pb-20 space-y-8 max-w-5xl mx-auto">
@@ -113,10 +122,9 @@ export function SettingsPage() {
                 </div>
                 <div className="p-6 space-y-6">
                     <div className="flex items-start gap-8">
-                        {/* Logo Upload */}
+                        {/* Logo Upload Placeholder - Functional logic can be added later if needed */}
                         <div className="shrink-0 flex flex-col gap-3 items-center">
                             <div className="h-32 w-32 rounded-2xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center relative group cursor-pointer overflow-hidden">
-                                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-primary transition-colors">
                                     <Upload className="h-8 w-8 mb-1" />
                                     <span className="text-xs font-medium">Yuklash</span>
@@ -131,31 +139,43 @@ export function SettingsPage() {
                                 <label className="text-sm font-medium text-gray-700">Restoran Nomi</label>
                                 <input
                                     className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                    value={restaurantInfo.name}
-                                    onChange={e => setRestaurantInfo({ ...restaurantInfo, name: e.target.value })}
+                                    value={formData.name}
+                                    onChange={e => handleChange('name', e.target.value)}
+                                    placeholder="Restoran nomi"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Telefon Raqam</label>
                                 <input
                                     className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                    value={restaurantInfo.phone}
-                                    onChange={e => setRestaurantInfo({ ...restaurantInfo, phone: e.target.value })}
+                                    value={formData.phone}
+                                    onChange={e => handleChange('phone', e.target.value)}
+                                    placeholder="+998..."
                                 />
                             </div>
                             <div className="space-y-2 md:col-span-2">
                                 <label className="text-sm font-medium text-gray-700">Manzil</label>
                                 <textarea
                                     className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[80px]"
-                                    value={restaurantInfo.address}
-                                    onChange={e => setRestaurantInfo({ ...restaurantInfo, address: e.target.value })}
+                                    value={formData.address}
+                                    onChange={e => handleChange('address', e.target.value)}
+                                    placeholder="Manzilni kiriting"
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-medium text-gray-700">Izoh (Mijozlar uchun)</label>
+                                <textarea
+                                    className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[60px]"
+                                    value={formData.description}
+                                    onChange={e => handleChange('description', e.target.value)}
+                                    placeholder="Qisqacha ta'rif"
                                 />
                             </div>
                         </div>
                     </div>
 
                     <div className="flex justify-end pt-4 border-t">
-                        <Button onClick={() => handleSave("Ma'lumotlar")} className="gap-2">
+                        <Button onClick={() => handleSave("Restoran")} className="gap-2">
                             <Save className="h-4 w-4" /> Saqlash
                         </Button>
                     </div>
@@ -175,18 +195,18 @@ export function SettingsPage() {
                         <label className="text-sm font-medium text-gray-700">Karta Raqami</label>
                         <input
                             className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
-                            value={paymentInfo.card_number}
-                            onChange={e => setPaymentInfo({ ...paymentInfo, card_number: e.target.value })}
-                            placeholder="8600 1234 5678 9012"
+                            value={formData.card_number}
+                            onChange={e => handleChange('card_number', e.target.value)}
+                            placeholder="8600..."
                         />
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Chek yuborish uchun raqam</label>
                         <input
                             className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                            value={paymentInfo.admin_phone}
-                            onChange={e => setPaymentInfo({ ...paymentInfo, admin_phone: e.target.value })}
-                            placeholder="+998 90 123 45 67"
+                            value={formData.admin_phone}
+                            onChange={e => handleChange('admin_phone', e.target.value)}
+                            placeholder="+998..."
                         />
                     </div>
                     <div className="md:col-span-2 space-y-2 pt-2 border-t">
@@ -198,8 +218,8 @@ export function SettingsPage() {
                         </label>
                         <select
                             className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-white"
-                            value={paymentInfo.admin_chat_id}
-                            onChange={e => setPaymentInfo({ ...paymentInfo, admin_chat_id: e.target.value })}
+                            value={formData.admin_chat_id}
+                            onChange={e => handleChange('admin_chat_id', e.target.value)}
                         >
                             <option value="">-- Tanlang --</option>
                             {telegramUsers.map((user: any) => (
@@ -209,7 +229,7 @@ export function SettingsPage() {
                             ))}
                         </select>
                         <p className="text-xs text-gray-500">
-                            Xabarnoma yuboriladigan foydalanuvchini tanlang. Ro'yxatda ko'rinish uchun avval botga <b>/start</b> bosing.
+                            Botga ulangan foydalanuvchilar ro'yxati.
                         </p>
                     </div>
                     <div className="md:col-span-2 flex justify-end pt-4 border-t mt-2">
@@ -233,16 +253,18 @@ export function SettingsPage() {
                         <label className="text-sm font-medium text-gray-700">Standart Narx (so'm)</label>
                         <input
                             className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                            value={deliveryInfo.price}
-                            onChange={e => setDeliveryInfo({ ...deliveryInfo, price: e.target.value })}
+                            value={formData.delivery_price}
+                            onChange={e => handleChange('delivery_price', e.target.value)}
+                            placeholder="0"
                         />
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Minimal Buyurtma</label>
                         <input
                             className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                            value={deliveryInfo.minOrder}
-                            onChange={e => setDeliveryInfo({ ...deliveryInfo, minOrder: e.target.value })}
+                            value={formData.minOrder}
+                            onChange={e => handleChange('minOrder', e.target.value)}
+                            placeholder="0"
                         />
                     </div>
                     <div className="space-y-2">
@@ -251,8 +273,9 @@ export function SettingsPage() {
                             <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <input
                                 className="w-full border rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={deliveryInfo.avgTime}
-                                onChange={e => setDeliveryInfo({ ...deliveryInfo, avgTime: e.target.value })}
+                                value={formData.avgTime}
+                                onChange={e => handleChange('avgTime', e.target.value)}
+                                placeholder="Masalan: 45-60"
                             />
                         </div>
                     </div>
@@ -264,7 +287,7 @@ export function SettingsPage() {
                 </div>
             </div>
 
-            {/* Security */}
+            {/* Security - Password (UI only for now, logic can be separate or added if needed) */}
             <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
                 <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -273,37 +296,7 @@ export function SettingsPage() {
                     </div>
                 </div>
                 <div className="p-6 max-w-xl space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Joriy Parol</label>
-                        <input type="password"
-                            className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                            value={passwordData.current}
-                            onChange={e => setPasswordData({ ...passwordData, current: e.target.value })}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Yangi Parol</label>
-                            <input type="password"
-                                className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={passwordData.new}
-                                onChange={e => setPasswordData({ ...passwordData, new: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Tasdiqlash</label>
-                            <input type="password"
-                                className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={passwordData.confirm}
-                                onChange={e => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-end pt-4">
-                        <Button variant="outline" onClick={() => handleSave("Parol")} className="gap-2">
-                            O'zgartirish
-                        </Button>
-                    </div>
+                    <p className="text-sm text-muted-foreground">Parolni o'zgartirish hozircha ishlamaydi (loyiha doirasida emas).</p>
                 </div>
             </div>
         </div>

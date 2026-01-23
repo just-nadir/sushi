@@ -2,7 +2,13 @@ import { NavLink } from "react-router-dom"
 import { LayoutDashboard, UtensilsCrossed, Settings, LogOut, ShoppingBag, LayoutGrid, ChefHat, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+import { useSettingsControllerFindAll } from "@/lib/api/generated"
+
 export function Sidebar() {
+    const { data: settingsRaw } = useSettingsControllerFindAll();
+    const settings = (((settingsRaw?.data as any)?.data || []) as any[]);
+    const restaurantName = settings.find((s: any) => s.key === 'name')?.value || "Sushi";
+
     const navItems = [
         { name: "Dashboard", icon: LayoutDashboard, path: "/" },
         { name: "Hisobotlar", icon: BarChart3, path: "/reports" },
@@ -20,7 +26,7 @@ export function Sidebar() {
                     <ChefHat className="h-6 w-6" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold tracking-tight text-gray-900 leading-none">Sushi</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-gray-900 leading-none">{restaurantName}</h2>
                     <span className="text-xs font-medium text-muted-foreground tracking-widest uppercase">Admin</span>
                 </div>
             </div>
@@ -28,9 +34,7 @@ export function Sidebar() {
             {/* Navigation */}
             <div className="flex-1 py-8 px-4">
                 <nav className="flex flex-col gap-1.5 space-y-1">
-                    <div className="px-4 pb-2">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Menyu</span>
-                    </div>
+                    {/* Menyu label removed */}
                     {navItems.map((item) => (
                         <NavLink
                             key={item.path}
@@ -59,7 +63,7 @@ export function Sidebar() {
                     </div>
                     <div className="flex-1 overflow-hidden">
                         <p className="text-sm font-bold text-gray-900 truncate">Administrator</p>
-                        <p className="text-xs text-muted-foreground truncate">admin@sushi.uz</p>
+                        <p className="text-xs text-muted-foreground truncate">{settings.find((s: any) => s.key === 'admin_phone')?.value || "admin@sushi.uz"}</p>
                     </div>
                 </div>
                 <button

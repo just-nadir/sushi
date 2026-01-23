@@ -23,16 +23,14 @@ import { SettingsModule } from './settings/settings.module';
     ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', '..', 'client-telegram', 'dist'),
-      exclude: ['/api/(.*)'],
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', '..', 'client-admin', 'dist'),
       serveRoot: '/admin',
-      exclude: ['/api/(.*)'],
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 20,
+      limit: 1000,
     }]),
     PrismaModule,
     CategoriesModule,
