@@ -1,17 +1,26 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Telegraf, Context } from 'telegraf';
+import axios from 'axios';
+import https from 'https';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class TelegramBotService implements OnModuleInit {
     private bot: Telegraf;
+    private readonly pollingEnabled: boolean;
+    private readonly sendTimeoutMs: number;
+    private readonly telegramHttpAgent: https.Agent;
 
     constructor(
         private configService: ConfigService,
         private prisma: PrismaService
     ) {
         const token = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
+        this.pollingEnabled = this.configService.get<string>('TELEGRAM_BOT_ENABLE_POLLING') !== 'false';
+        this.sendTimeoutMs = Number(this.configService.get<string>('TELEGRAM_SEND_TIMEOUT_MS') || 8000);
+        // Some hosts intermittently hang on IPv6 when calling Telegram API.
+        this.telegramHttpAgent = new https.Agent({ family: 4, keepAlive: true });
         if (token) {
             this.bot = new Telegraf(token);
         }
@@ -71,14 +80,20 @@ export class TelegramBotService implements OnModuleInit {
             });
         });
 
+        if (!this.pollingEnabled) {
+            console.log('Telegram polling disabled; sendMessage remains available');
+            return;
+        }
+
         this.bot.launch().then(() => {
             console.log('Telegram Bot started');
             // Graceful stop listener only if started
             process.once('SIGINT', () => this.bot.stop('SIGINT'));
             process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
         }).catch((err) => {
-            console.warn('Telegram Bot failed to start (skipping for local dev):', err.message);
-            this.bot = null as any;
+            // Polling can fail in multi-instance environments due to getUpdates conflicts.
+            // Keep bot instance alive so outgoing notifications still work.
+            console.warn('Telegram polling failed; outgoing notifications are still enabled:', err.message);
         });
     }
 
@@ -106,7 +121,24 @@ ${itemsList}
         `.trim();
 
         try {
-            await this.bot.telegram.sendMessage(chatId, message, { parse_mode: 'HTML' });
+            const token = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
+            if (!token) {
+                console.warn('TELEGRAM_BOT_TOKEN missing, skipping Telegram notification');
+                return;
+            }
+
+            await axios.post(
+                `https://api.telegram.org/bot${token}/sendMessage`,
+                {
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'HTML'
+                },
+                {
+                    timeout: this.sendTimeoutMs,
+                    httpsAgent: this.telegramHttpAgent
+                }
+            );
         } catch (error) {
             console.error('Failed to send Telegram notification:', error);
         }

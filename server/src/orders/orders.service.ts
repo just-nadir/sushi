@@ -134,6 +134,8 @@ export class OrdersService {
         await Promise.all(chatIds.map(chatId =>
           this.telegramBotService.sendOrderNotification(chatId, order)
         ));
+      } else {
+        console.warn("Telegram admin_chat_id is empty; skipping order notification");
       }
     } catch (e) {
       console.error("Failed to notify telegram", e);
