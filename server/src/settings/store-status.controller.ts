@@ -35,7 +35,7 @@ export class StoreStatusController {
         // Convert to local time string HH:mm for easy comparison
         // Note: Server time might be UTC, but we assume local usage or handle timezone offset.
         // For simplicity in this local dev env, we use local time string.
-        const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // "14:30"
+        const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }); // "14:30"
 
         const workStart = config['work_start'] || "09:00";
         const workEnd = config['work_end'] || "23:59";

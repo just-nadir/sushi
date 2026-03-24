@@ -86,3 +86,16 @@ export interface CreateOrderDto {
     paymentType?: string;
     userTelegramId?: string;
 }
+export interface SendOtpDto {
+    phone: string;
+}
+export interface VerifyOtpDto {
+    phone: string;
+    code: string;
+}
+export interface RegisterDto {
+    phone: string;
+    fullName: string;
+    telegramId?: string;
+    username?: string;
+}

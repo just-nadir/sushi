@@ -127,10 +127,10 @@ export function HomePage() {
 
                                     {/* Info */}
                                     <div className="space-y-1.5">
-                                        <h4 className="font-bold text-[15px] leading-tight text-gray-900 line-clamp-1">
+                                        <h4 className="font-bold text-[15px] leading-tight text-gray-900 line-clamp-2">
                                             {product.name}
                                         </h4>
-                                        <p className="text-gray-600 text-[11px] line-clamp-2 leading-relaxed h-[34px]">
+                                        <p className="text-gray-600 text-[11px] line-clamp-3 leading-relaxed min-h-[34px]">
                                             {product.description || "Tarkib ma'lumotlari mavjud emas"}
                                         </p>
                                     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/Button";
+import { } from "@/components/ui/Button";
 import { socket, Order } from "@/lib/socket";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useOrdersControllerFindAll, getOrdersControllerFindAllQueryKey } from "@/lib/api/generated";
