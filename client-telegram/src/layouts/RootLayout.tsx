@@ -2,7 +2,6 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom"
 import { BottomNav } from "@/components/layout/BottomNav"
 import { useAuthStore } from "@/lib/auth.store"
 import { useEffect } from "react"
-import { AnimatePresence } from "framer-motion"
 
 export function RootLayout() {
     const { isAuthenticated } = useAuthStore();
@@ -16,14 +15,11 @@ export function RootLayout() {
     }, [isAuthenticated, navigate, location]);
 
     return (
-        <div className="min-h-screen relative overflow-hidden">
-            <div className="mesh-background" />
-            <main className="container max-w-md mx-auto p-4 relative z-10 pb-24 min-h-screen">
+        <div className="min-h-screen bg-background">
+            <main className="max-w-md mx-auto min-h-screen pb-20">
                 <Outlet />
             </main>
-            <AnimatePresence>
-                {location.pathname !== '/login' && <BottomNav />}
-            </AnimatePresence>
+            {location.pathname !== '/login' && <BottomNav />}
         </div>
     )
 }

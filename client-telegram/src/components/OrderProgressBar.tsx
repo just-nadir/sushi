@@ -1,20 +1,20 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, ChefHat, Package, Truck, CircleDot } from "lucide-react";
+import { Check } from "lucide-react";
 
 interface OrderProgressBarProps {
     status: string;
 }
 
 const steps = [
-    { key: "NEW", label: "Qabul qilindi", icon: Clock },
-    { key: "COOKING", label: "Tayyorlanmoqda", icon: ChefHat },
-    { key: "READY", label: "Tayyor", icon: Package },
-    { key: "DELIVERY", label: "Yetkazilmoqda", icon: Truck },
-    { key: "COMPLETED", label: "Yetkazildi", icon: CheckCircle2 },
+    { key: "NEW", label: "Qabul" },
+    { key: "COOKING", label: "Tayyorlanmoqda" },
+    { key: "READY", label: "Tayyor" },
+    { key: "DELIVERY", label: "Yo'lda" },
+    { key: "COMPLETED", label: "Yetkazildi" },
 ];
 
 function getStepIndex(status: string): number {
-    if (status === "CONFIRMED") return 0; // Same as NEW visually
+    if (status === "CONFIRMED") return 0;
     const idx = steps.findIndex(s => s.key === status);
     return idx >= 0 ? idx : 0;
 }
@@ -22,71 +22,76 @@ function getStepIndex(status: string): number {
 export function OrderProgressBar({ status }: OrderProgressBarProps) {
     if (status === "CANCELLED") {
         return (
-            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl border border-red-100">
-                <div className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">✕</span>
+            <div className="flex items-center gap-2 py-2">
+                <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                    <span className="text-red-500 text-xs font-bold">✕</span>
                 </div>
-                <span className="text-sm font-medium text-red-700">Buyurtma bekor qilindi</span>
+                <span className="text-sm font-medium text-red-600">Bekor qilindi</span>
             </div>
         );
     }
 
-    // For completed/delivered orders, show all steps as done
     const isFullyDone = ["COMPLETED", "DELIVERED"].includes(status);
     const currentIndex = isFullyDone ? steps.length - 1 : getStepIndex(status);
 
     return (
         <div className="py-3">
-            <div className="flex items-center justify-between relative">
-                {/* Background line */}
-                <div className="absolute top-4 left-[10%] right-[10%] h-[2px] bg-gray-200 rounded-full" />
-
-                {/* Progress line */}
+            {/* Progress line */}
+            <div className="relative flex items-center justify-between mb-2">
+                {/* Background track */}
+                <div className="absolute top-[9px] left-3 right-3 h-[3px] bg-gray-100 rounded-full" />
+                {/* Filled track */}
                 <motion.div
-                    className="absolute top-4 left-[10%] h-[2px] bg-primary rounded-full"
+                    className="absolute top-[9px] left-3 h-[3px] bg-primary rounded-full"
                     initial={{ width: "0%" }}
-                    animate={{ width: `${(currentIndex / (steps.length - 1)) * 80}%` }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    animate={{ width: `calc(${(currentIndex / (steps.length - 1)) * 100}% - 24px)` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
                 />
 
-                {/* Steps */}
+                {/* Dots */}
                 {steps.map((step, i) => {
-                    const isActive = i === currentIndex && !isFullyDone;
                     const isDone = i < currentIndex || isFullyDone;
-                    const Icon = step.icon;
+                    const isActive = i === currentIndex && !isFullyDone;
 
                     return (
-                        <div key={step.key} className="flex flex-col items-center z-10 relative">
-                            <motion.div
-                                initial={{ scale: 0.8 }}
-                                animate={{ scale: isActive ? 1.1 : 1 }}
-                                className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors duration-300 ${
+                        <div key={step.key} className="relative z-10 flex flex-col items-center">
+                            <div
+                                className={`w-[18px] h-[18px] rounded-full flex items-center justify-center transition-all ${
                                     isDone
-                                        ? "bg-primary text-white shadow-md shadow-primary/30"
+                                        ? "bg-primary"
                                         : isActive
-                                            ? "bg-primary text-white shadow-lg shadow-primary/40 ring-4 ring-primary/20"
-                                            : "bg-white border-2 border-gray-200 text-gray-400"
+                                            ? "bg-primary ring-4 ring-primary/20"
+                                            : "bg-gray-200"
                                 }`}
                             >
-                                {isDone ? (
-                                    <CheckCircle2 className="h-4 w-4" />
-                                ) : isActive ? (
+                                {isDone && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                {isActive && (
                                     <motion.div
-                                        animate={{ scale: [1, 1.2, 1] }}
-                                        transition={{ repeat: Infinity, duration: 1.5 }}
-                                    >
-                                        <CircleDot className="h-4 w-4" />
-                                    </motion.div>
-                                ) : (
-                                    <Icon className="h-3.5 w-3.5" />
+                                        animate={{ scale: [1, 1.4, 1] }}
+                                        transition={{ repeat: Infinity, duration: 1.2 }}
+                                        className="w-2 h-2 bg-white rounded-full"
+                                    />
                                 )}
-                            </motion.div>
-                            <span className={`text-[9px] mt-1.5 font-medium text-center leading-tight max-w-[50px] ${
-                                isDone || isActive ? "text-gray-900" : "text-gray-400"
-                            }`}>
-                                {step.label}
-                            </span>
+                            </div>
                         </div>
+                    );
+                })}
+            </div>
+
+            {/* Labels */}
+            <div className="flex justify-between">
+                {steps.map((step, i) => {
+                    const isDone = i < currentIndex || isFullyDone;
+                    const isActive = i === currentIndex && !isFullyDone;
+                    return (
+                        <span
+                            key={step.key}
+                            className={`text-[9px] font-medium text-center max-w-[52px] leading-tight ${
+                                isDone || isActive ? "text-gray-900" : "text-gray-400"
+                            }`}
+                        >
+                            {step.label}
+                        </span>
                     );
                 })}
             </div>

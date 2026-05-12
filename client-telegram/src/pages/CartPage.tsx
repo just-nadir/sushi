@@ -1,73 +1,81 @@
-import { Button } from "@/components/ui/Button"
 import { useCartStore } from "@/lib/store"
-import { Trash2, Plus, Minus } from "lucide-react"
+import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export function CartPage() {
     const { items, removeFromCart, updateQuantity, total } = useCartStore();
     const navigate = useNavigate();
 
-    const handleCheckout = () => {
-        if (items.length === 0) {
-            // Optionally, you could add a toast notification here
-            // toast.error("Savatcha bo'sh");
-            return;
-        }
-        navigate("/checkout");
-    };
-
-    // Removed unused logic
-
     if (items.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-                <h2 className="text-xl font-semibold text-muted-foreground">Savatcha bo'sh 😕</h2>
-                <Button onClick={() => navigate('/')}>Menyuga qaytish</Button>
+            <div className="flex flex-col items-center justify-center h-[80vh] gap-4 px-4">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                    <ShoppingBag className="w-10 h-10 text-gray-300" />
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">Savatcha bo'sh</h2>
+                <p className="text-sm text-gray-500 text-center">Menyudan mahsulotlarni qo'shing</p>
+                <button
+                    onClick={() => navigate('/')}
+                    className="mt-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+                >
+                    Menyuga qaytish
+                </button>
             </div>
         )
     }
 
     return (
-        <div className="space-y-6 pb-40 min-h-screen pt-24">
-            <div className="flex items-center justify-between px-1">
-                <h1 className="text-3xl font-bold tracking-tight">Savatcha</h1>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-                    Yopish
-                </Button>
+        <div className="min-h-screen pb-40">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
+                <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <ArrowLeft className="w-5 h-5 text-gray-700" />
+                </button>
+                <h1 className="text-xl font-bold text-gray-900">Savatcha</h1>
+                <span className="text-sm text-gray-500 ml-auto">{items.length} ta mahsulot</span>
             </div>
 
-            <div className="space-y-4">
+            {/* Items */}
+            <div className="px-4 pt-4 space-y-3">
                 {items.map(item => (
-                    <div key={item.id} className="liquid-card p-4 flex gap-4">
-                        <div className="h-20 w-20 bg-secondary rounded-xl shrink-0 overflow-hidden">
-                            <img src={item.image?.replace('http://localhost:3000', '') || "https://placehold.co/100"} alt={item.name} className="w-full h-full object-cover" />
+                    <div key={item.id} className="flex gap-3 bg-white rounded-2xl p-3 border border-gray-100">
+                        <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden shrink-0">
+                            <img
+                                src={item.image?.replace('http://localhost:3000', '') || "https://placehold.co/100"}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                            />
                         </div>
-                        <div className="flex-1 flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                                <h3 className="font-bold text-gray-900 line-clamp-1">{item.name}</h3>
-                                <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:bg-red-50 p-1 rounded-lg transition-colors">
-                                    <Trash2 className="w-4 h-4" />
+                        <div className="flex-1 flex flex-col justify-between min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                                <h3 className="font-semibold text-sm text-gray-900 line-clamp-1">{item.name}</h3>
+                                <button
+                                    onClick={() => removeFromCart(item.id)}
+                                    className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center shrink-0"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
                                 </button>
                             </div>
-                            <div className="flex justify-between items-end mt-2">
-                                <span className="font-bold text-lg text-primary">{(item.price * item.quantity).toLocaleString()}</span>
-
-                                <div className="flex items-center gap-3 bg-gray-100 rounded-xl p-1">
+                            <div className="flex items-center justify-between mt-2">
+                                <span className="font-bold text-gray-900">
+                                    {(item.price * item.quantity).toLocaleString()} <span className="text-xs font-normal text-gray-500">so'm</span>
+                                </span>
+                                <div className="flex items-center gap-2 bg-gray-100 rounded-full h-8 px-1">
                                     <button
                                         onClick={() => {
                                             if (item.quantity > 1) updateQuantity(item.id, -1);
                                             else removeFromCart(item.id);
                                         }}
-                                        className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-sm font-bold hover:scale-95 transition-transform"
+                                        className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
                                     >
-                                        <Minus className="w-3.5 h-3.5" />
+                                        <Minus className="w-3 h-3 text-gray-700" />
                                     </button>
-                                    <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
+                                    <span className="text-sm font-bold w-5 text-center">{item.quantity}</span>
                                     <button
                                         onClick={() => updateQuantity(item.id, 1)}
-                                        className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-sm font-bold text-primary hover:scale-95 transition-transform"
+                                        className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
                                     >
-                                        <Plus className="w-3.5 h-3.5" />
+                                        <Plus className="w-3 h-3 text-gray-700" />
                                     </button>
                                 </div>
                             </div>
@@ -76,15 +84,19 @@ export function CartPage() {
                 ))}
             </div>
 
-            <div className="fixed left-4 right-4 z-40" style={{ bottom: "calc(70px + env(safe-area-inset-bottom, 20px))" }}>
-                <div className="liquid-glass border-none !bg-white/90 dark:!bg-black/90 backdrop-blur-xl rounded-[2rem] p-5 shadow-2xl space-y-4">
-                    <div className="flex justify-between items-center text-lg font-bold px-2">
-                        <span className="text-gray-600">Jami:</span>
-                        <span className="text-2xl">{total().toLocaleString()} so'm</span>
+            {/* Bottom Bar */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 p-4 pb-safe">
+                <div className="max-w-md mx-auto">
+                    <div className="flex justify-between items-center mb-3 px-1">
+                        <span className="text-gray-500 text-sm">Jami</span>
+                        <span className="text-xl font-bold text-gray-900">{total().toLocaleString()} so'm</span>
                     </div>
-                    <Button className="w-full h-12 text-lg rounded-xl font-bold shadow-lg shadow-primary/25" onClick={handleCheckout}>
+                    <button
+                        onClick={() => navigate('/checkout')}
+                        className="w-full h-13 py-3.5 bg-primary text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform shadow-sm"
+                    >
                         Buyurtma berish
-                    </Button>
+                    </button>
                 </div>
             </div>
         </div>

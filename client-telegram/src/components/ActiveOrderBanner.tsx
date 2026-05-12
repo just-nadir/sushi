@@ -16,12 +16,12 @@ interface Order {
 
 const activeStatuses = ["NEW", "CONFIRMED", "COOKING", "READY", "DELIVERY"];
 
-const statusConfig: Record<string, { icon: typeof Clock; label: string; color: string; bg: string }> = {
-    NEW: { icon: Clock, label: "Qabul qilindi", color: "text-blue-700", bg: "bg-blue-500" },
-    CONFIRMED: { icon: Clock, label: "Tasdiqlandi", color: "text-blue-700", bg: "bg-blue-500" },
-    COOKING: { icon: ChefHat, label: "Tayyorlanmoqda", color: "text-orange-700", bg: "bg-orange-500" },
-    READY: { icon: Package, label: "Tayyor", color: "text-purple-700", bg: "bg-purple-500" },
-    DELIVERY: { icon: Truck, label: "Yetkazilmoqda", color: "text-indigo-700", bg: "bg-indigo-500" },
+const statusConfig: Record<string, { icon: typeof Clock; label: string; color: string }> = {
+    NEW: { icon: Clock, label: "Qabul qilindi", color: "bg-blue-500" },
+    CONFIRMED: { icon: Clock, label: "Tasdiqlandi", color: "bg-blue-500" },
+    COOKING: { icon: ChefHat, label: "Tayyorlanmoqda", color: "bg-orange-500" },
+    READY: { icon: Package, label: "Tayyor", color: "bg-purple-500" },
+    DELIVERY: { icon: Truck, label: "Yetkazilmoqda", color: "bg-indigo-500" },
 };
 
 export function ActiveOrderBanner() {
@@ -40,22 +40,16 @@ export function ActiveOrderBanner() {
         enabled: !!userPhone,
     });
 
-    // Listen for real-time updates
     useEffect(() => {
         const onOrderUpdate = () => {
             queryClient.invalidateQueries({ queryKey: ["my-orders"] });
         };
-
         socket.on("orderStatusChanged", onOrderUpdate);
         if (!socket.connected) socket.connect();
-
-        return () => {
-            socket.off("orderStatusChanged", onOrderUpdate);
-        };
+        return () => { socket.off("orderStatusChanged", onOrderUpdate); };
     }, [queryClient]);
 
     const activeOrder = orders?.find(o => activeStatuses.includes(o.status));
-
     if (!activeOrder) return null;
 
     const config = statusConfig[activeOrder.status] || statusConfig.NEW;
@@ -64,33 +58,29 @@ export function ActiveOrderBanner() {
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0, y: -10, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -10, height: 0 }}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
                 className="mb-2"
             >
-                <div
+                <button
                     onClick={() => navigate("/history")}
-                    className="liquid-card !p-3 cursor-pointer active:scale-[0.98] transition-transform border-l-4 border-l-primary"
+                    className="w-full bg-white rounded-2xl border border-gray-100 p-3.5 flex items-center gap-3 shadow-sm active:scale-[0.98] transition-transform"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className={`h-10 w-10 rounded-xl ${config.bg} flex items-center justify-center shadow-sm`}>
-                            <Icon className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-gray-900">Buyurtma #{activeOrder.id}</span>
-                                <motion.div
-                                    animate={{ opacity: [1, 0.4, 1] }}
-                                    transition={{ repeat: Infinity, duration: 1.5 }}
-                                    className={`h-2 w-2 rounded-full ${config.bg}`}
-                                />
-                            </div>
-                            <p className={`text-xs font-medium ${config.color}`}>{config.label}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+                    <div className={`w-10 h-10 rounded-xl ${config.color} flex items-center justify-center`}>
+                        <Icon className="w-5 h-5 text-white" />
                     </div>
-                </div>
+                    <div className="flex-1 text-left min-w-0">
+                        <p className="font-semibold text-sm text-gray-900">Buyurtma #{activeOrder.id}</p>
+                        <p className="text-xs text-gray-500">{config.label}</p>
+                    </div>
+                    <motion.div
+                        animate={{ opacity: [1, 0.3, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                        className={`w-2 h-2 rounded-full ${config.color}`}
+                    />
+                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                </button>
             </motion.div>
         </AnimatePresence>
     );
