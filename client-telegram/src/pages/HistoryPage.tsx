@@ -1,10 +1,14 @@
-import { Clock, ChevronRight, Package, Loader2 } from "lucide-react";
+import { Clock, ChevronRight, Package, Loader2, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth.store";
 import { useEffect, useState } from "react";
 import { socket } from "@/lib/socket";
+import { useCartStore } from "@/lib/store";
+import { useNavigate } from "react-router-dom";
+import { OrderProgressBar } from "@/components/OrderProgressBar";
+import { toast } from "sonner";
 
 interface OrderItem {
     id: number;
@@ -27,6 +31,8 @@ interface Order {
 export function HistoryPage() {
     const { user } = useAuthStore();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const { addToCart, clearCart } = useCartStore();
 
     // Prioritize auth user phone, fallback to local storage
     const userPhone = user?.phone || localStorage.getItem('user-phone');
@@ -164,6 +170,13 @@ export function HistoryPage() {
                             </span>
                         </div>
 
+                        {/* Progress Bar for active orders */}
+                        {!["COMPLETED", "DELIVERED", "CANCELLED"].includes(order.status) && (
+                            <div className="mb-3">
+                                <OrderProgressBar status={order.status} />
+                            </div>
+                        )}
+
                         <div className="pl-[52px] space-y-2 mb-4">
                             {order.items.map((item) => (
                                 <div key={item.id} className="flex items-center justify-between text-sm">
@@ -178,9 +191,37 @@ export function HistoryPage() {
                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Jami to'lov</span>
                                 <span className="font-bold text-gray-900">{order.totalAmount.toLocaleString()} so'm</span>
                             </p>
-                            <button className="text-xs text-white bg-primary shadow-lg shadow-primary/30 px-4 py-2 rounded-xl font-bold flex items-center gap-1 active:scale-95 transition-transform hover:bg-primary/90">
-                                Batafsil <ChevronRight className="h-3 w-3" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {["COMPLETED", "DELIVERED"].includes(order.status) && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            clearCart();
+                                            order.items.forEach(item => {
+                                                for (let i = 0; i < item.quantity; i++) {
+                                                    addToCart({
+                                                        id: item.productId,
+                                                        name: item.product.name,
+                                                        price: item.price,
+                                                        description: "",
+                                                        isAvailable: true,
+                                                        categoryId: "",
+                                                    });
+                                                }
+                                            });
+                                            toast.success("Mahsulotlar savatchaga qo'shildi!");
+                                            navigate("/cart");
+                                        }}
+                                        className="text-xs text-primary bg-primary/10 border border-primary/20 px-3 py-2 rounded-xl font-bold flex items-center gap-1 active:scale-95 transition-transform hover:bg-primary/20"
+                                    >
+                                        <RotateCcw className="h-3 w-3" />
+                                        Qayta
+                                    </button>
+                                )}
+                                <button className="text-xs text-white bg-primary shadow-lg shadow-primary/30 px-4 py-2 rounded-xl font-bold flex items-center gap-1 active:scale-95 transition-transform hover:bg-primary/90">
+                                    Batafsil <ChevronRight className="h-3 w-3" />
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 ))}

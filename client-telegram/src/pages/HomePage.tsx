@@ -5,6 +5,7 @@ import { useState, useMemo } from "react"
 import { useCartStore } from "@/lib/store"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
+import { ActiveOrderBanner } from "@/components/ActiveOrderBanner"
 
 export function HomePage() {
     const navigate = useNavigate();
@@ -47,6 +48,9 @@ export function HomePage() {
         <div className="space-y-6 pb-24 min-h-screen">
             {/* Header Spacing */}
             <div className="h-20" />
+
+            {/* Active Order Banner */}
+            <ActiveOrderBanner />
 
             {/* Categories */}
             <div className="flex flex-nowrap gap-2.5 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide w-full touch-pan-x">
