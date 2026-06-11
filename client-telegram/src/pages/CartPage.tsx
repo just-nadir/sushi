@@ -25,7 +25,7 @@ export function CartPage() {
     }
 
     return (
-        <div className="min-h-screen pb-40">
+        <div className="min-h-screen pb-56">
             {/* Header */}
             <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
@@ -85,7 +85,7 @@ export function CartPage() {
             </div>
 
             {/* Bottom Bar */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 p-4 pb-safe">
+            <div className="fixed bottom-16 left-0 right-0 z-40 bg-white border-t border-gray-100 p-4">
                 <div className="max-w-md mx-auto">
                     <div className="flex justify-between items-center mb-3 px-1">
                         <span className="text-gray-500 text-sm">Jami</span>
