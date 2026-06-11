@@ -120,7 +120,7 @@ export function CheckoutPage() {
     const grandTotal = total() + deliveryPrice;
 
     return (
-        <div className="min-h-screen pb-36">
+        <div className="min-h-screen pb-52">
             {/* Header */}
             <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
@@ -250,7 +250,7 @@ export function CheckoutPage() {
 
             {/* Submit Button */}
             {!isInputFocused && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 p-4 pb-safe">
+                <div className="fixed bottom-16 left-0 right-0 z-40 bg-white border-t border-gray-100 p-4">
                     <div className="max-w-md mx-auto flex items-center justify-between">
                         <div>
                             <p className="text-xs text-gray-500">Jami</p>
